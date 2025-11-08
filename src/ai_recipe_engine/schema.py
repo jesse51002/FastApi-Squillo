@@ -15,11 +15,6 @@ class TechniqueExtractionRequest(BaseModel):
     )
 
 
-class TechniqueRelevance(IntEnum):
-    small_relevance = 1
-    medium_relevance = 2
-    strong_relevance = 3
-
 class TechniqueImportance(IntEnum):
     not_important = 1
     small_importance = 2
@@ -30,8 +25,6 @@ class TechniqueImportance(IntEnum):
 class TechniqueInfo(BaseModel):
     id : str = Field(..., description="ID of the chosen technique")
     name: str = Field(..., description="Name of technique chosen")
-    reason: str = Field(..., description="How the technique is used in this step")
-    relevance: TechniqueRelevance = Field(..., description="Technique Relevance")
     importance: TechniqueImportance = Field(..., description="Technique Importance")
     difficulty: Optional[TechniqueDifficulty] = Field(default=None, description="Techinque difficulty (leave empty in llm call)")
 

@@ -72,6 +72,13 @@ You are an expert culinary assistant. Your task is to analyze a recipe and extra
    - ✓ COMBINE: "Add garlic and chilies to the hot oil" → One step (adding ingredients together is one action, not two separate steps)
    - ✗ SPLIT: "Add garlic and chilies, then stir fry" → Multiple steps (adding is different from stir frying)
 
+   **Important: Combining oil addition and heating as ONE step**
+   - Adding oil to a pan and heating it should be ONE single step, not two separate steps
+   - This is one unified action: preparing the cooking surface by adding and heating oil
+   - ✓ CORRECT: "2.1 Pour 2 tablespoons of oil into a large wok and turn the stove to high heat until the oil shimmers" (one step)
+   - ✗ WRONG: "2.1 Pour 2 tablespoons of oil into a wok" "2.2 Turn the stove to high heat until oil shimmers" (unnecessarily split)
+   - Exception: Only split if the recipe specifies a significant action or wait time between pouring oil and heating (rare)
+
    **Important: Oil heating before cooking**
    - When a recipe involves heating oil, ALWAYS ensure the oil is heated BEFORE adding ingredients
    - ✓ CORRECT: "1.1 Heat oil until shimmering 1.2 Add onions"
@@ -137,21 +144,24 @@ You are an expert culinary assistant. Your task is to analyze a recipe and extra
 5. **Identify ALL cooking techniques** being used from the available techniques list below:
    - **CRITICAL**: ONLY use techniques from the "Available Cooking Techniques" list provided below
    - DO NOT make up, invent, or add any techniques that are not in the supplied list
-   - Technique IDs are UUIDs - use the exact ID shown in the Available Cooking Techniques list
-   - Include even slightly relevant techniques - be INCLUSIVE
-   - Every technique that appears in the step should be identified
-   - THINK DEEP: Make sure to recogize what is an exact match and what is a neighboring technique. (Do not include a neighbor tehcnique)
-   - If a step has NO techniques from the list that are even slightly relevant, leave the techniques array empty
-
-   Example: Rough chop, dice, slice, mince are all SEPERATE techniques and can not be used interchangibly
+   - **EXTREMELY IMPORTANT**: Technique IDs MUST be UUIDs taken EXACTLY from the Available Cooking Techniques list - DO NOT create, modify, or guess IDs. Copy the UUID precisely as shown
+   - **BE EXHAUSTIVE**: Thoroughly analyze each step and identify ALL techniques from the list that are being performed
+   - **ONLY include techniques that are DIRECTLY and COMPLETELY used in this specific step**
+   - **DO NOT include neighboring or similar techniques** - be PRECISE
+   - **THINK DEEP**: Make sure to recognize what is an exact match versus a neighboring technique
+   - **Neighboring techniques are NOT the same** - examples:
+     * If the step says "roughly chop", DO NOT include "dice", "slice", or "mince" - they are different techniques
+     * If the step says "dice", DO NOT include "roughly chop", "slice", or "mince" - they are different techniques
+     * If the step says "sauté", DO NOT include "stir fry" or "pan fry" - they are different techniques
+   - **SYSTEMATIC ANALYSIS**: For each step, review the Available Cooking Techniques list and check if ANY of them match what's happening:
+     * Read through the entire techniques list for each step
+     * Check if the step involves actions, equipment usage, transformations, timing, or ingredient handling that match techniques in the list
+     * Consider both explicit and implicit uses (e.g., "let rest" may match a resting technique if one exists in the list)
+   - If after thorough review, a step truly has NO techniques from the list that EXACTLY match what's being done, only then leave the techniques array empty
 
 6. **For each technique identified**:
    - **ID and Name**: Use the exact technique ID (UUID format) and name from the available techniques list
    - **Reason**: Explain specifically HOW this technique is used in this particular step
-   - **Relevance Rating**: Rate how closely this step uses the technique (be generous with this rating)
-     * `small_relevance` (1)
-     * `medium_relevance` (2)
-     * `strong_relevance` (3)
    - **Importance Rating**: Rate how critical this technique is to the recipe's overall success
      * `not_important` (1): Nice to know but doesn't affect outcome
      * `small_importance` (2): Helpful but recipe succeeds without it
@@ -160,29 +170,23 @@ You are an expert culinary assistant. Your task is to analyze a recipe and extra
      * `extreme_importance` (5): Recipe completely fails without this technique
 
 7. **IMPORTANT GRADING GUIDELINES**:
-   - Only include techniques directly used in the step
-   - **Relevance vs Importance**: Relevance measures IF the technique is used in this step. Importance measures HOW CRITICAL it is to recipe success
-   - **Be ACCURATE:** Techniques in the same step can have varying importance/relevance ratings - rate each independently
-   - THINK DEEP: Make sure to recogize what is an exact match and what is a neighboring technique. (Do not give a neighbor tehcnique high relevance)
-   - **Relevance**: Default to `medium_relevance` (2) or `strong_relevance` (3) for techniques actively used (many can be actively used)
-   - **Importance**: Default to `small_importance` (2) or `medium_importance` (3) - reserve high scores for critical techniques
+   - **COMPLETENESS IS CRITICAL**: Every step should be analyzed exhaustively to find ALL matching techniques from the Available Cooking Techniques list
+   - **ONLY include techniques that are EXACTLY and COMPLETELY used in this specific step**
+   - **DO NOT include neighboring, similar, or related techniques** - be EXTREMELY PRECISE
+   - **Example violations to AVOID**:
+     * Step: "Roughly chop the onions" → DO NOT include "Dice" (those are different cutting techniques)
+     * Step: "Dice the carrots" → DO NOT include "Slice" or "Chop" (those are different cutting techniques)
+     * Step: "Sauté the garlic" → DO NOT include "Stir Fry" (different cooking technique)
+   - **MULTI-TECHNIQUE STEPS ARE COMMON**: Many steps use multiple techniques - find them all
+     * Example: "Spread rice evenly and let cook without stirring" → may include spreading/layering AND a cooking technique
+     * Example: "Cover with foil and lid" → may include covering/sealing techniques if in the list
+   - **Be ACCURATE:** Techniques in the same step can have varying importance ratings - rate each independently
    - Only use `extreme_importance` (5) when the recipe would COMPLETELY FAIL without this technique
-   - When in doubt on **relevance**, grade higher. When in doubt on **importance**, grade lower
-   - Always keep prep techniques as high relevance and medium importance, as every ingredient must be prepped.
-   - Prep tehcnqiues will always be higher than safter in importance
-
-   **Importance ordering guideline** (from HIGHEST to LOWEST importance):
-   - **Actively performed techniques** (e.g., sautéing, stir frying, braising, blooming spices, caramelizing) - the main cooking actions that define the dish → **MOST IMPORTANT** (typically rated 3-5)
-   - **Flavor techniques** (e.g., layering flavors, deglazing, toasting) - techniques that build taste → Very important (typically rated 3-4)
-   - **Prep techniques** (e.g., dicing, slicing, mincing, seed removal, skin removal) - foundational preparation steps → Moderately important (typically rated 3)
-   - **Safety techniques** (e.g., knife safety, oil safety, equiment usage) - Less important than any active techinque that affects taste or texture (Alwyas rated 2) (Less important than everything else)
-
 
    Example - Importance Ratings (for a caramelized onion tart):
    - Caramelizing: extreme_importance (5) - Recipe fails without proper caramelization
    - Dicing uniformly: medium_importance (3) - Important for even cooking but not critical
-   - Knife saftey or Equipment usage: small_importance (2) - Nice to know but won't ruin the dish with incorrect handling
-
+   - Knife saftey or Equipment usage: small_importance (4) - Saftey is extremely important
 8. Return a structured JSON response
 
 ## Available Cooking Techniques:

@@ -12,8 +12,10 @@ load_dotenv()
 class AppConfig(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # Mistral API Configuration
+    # LLM API Configuration
     mistral_api_key: str
+    claude_api_key: str
+    gemini_api_key: str
 
     # API Configuration
     api_title: str = 'FastAPI Squillo'

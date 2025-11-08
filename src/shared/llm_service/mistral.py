@@ -1,9 +1,10 @@
 import httpx
-from typing import Optional
+from typing import Optional, Any
 from enum import Enum
 
 import logging
 from src.core.config import settings
+from .base import BaseLLMService
 from .schemas import (
     MessageContent,
     Message,
@@ -26,17 +27,32 @@ class MistralModels(Enum):
     reasoning_small = 'magistral-small-latest'
 
 
-class MistralService:
+class MistralService(BaseLLMService):
     """Service for processing voice recordings and converting them to structured recipes using LLM."""
 
     def __init__(self):
         self.api_key = settings.mistral_api_key
 
-    async def call_llm_api(self, input_prompt: str) -> Optional[str]:
+    def get_model_enum(self) -> type[Enum]:
+        """Return the MistralModels enum class.
+
+        Returns:
+            MistralModels enum class
+        """
+        return MistralModels
+
+    async def call_llm_api(
+        self,
+        input_prompt: str,
+        json_schema: Optional[dict[str, Any]] = None
+    ) -> Optional[str]:
         """Make the API call to the LLM service.
 
         Args:
             input_prompt: The text prompt to send to the LLM
+            json_schema: Optional JSON schema for structured output.
+                        Mistral always uses json_object response format.
+                        This parameter is included for interface compatibility.
 
         Returns:
             The LLM response content as a string, or None if no response
@@ -48,6 +64,7 @@ class MistralService:
         logger.debug(f"Input promt:\n\n {input_prompt}")
 
         # Build request using Pydantic models
+        # Mistral always uses json_object format, json_schema parameter not used
         request = MistralRequest(
             model=MistralModels.large.value,
             max_tokens=10000,
