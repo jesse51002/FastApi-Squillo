@@ -5,7 +5,7 @@ from pathlib import Path
 import logging
 import yaml
 
-from src.shared.llm_service.mistral import MistralService
+from src.shared.llm_service.base import BaseLLMService
 from src.shared.technique_service.technique_service import TechniqueService
 from src.shared.technique_service.schemas import Technique
 
@@ -21,7 +21,7 @@ class TechniqueExtractionService:
 
     def __init__(
             self,
-            mistral_service: MistralService,
+            llm_service: BaseLLMService,
             technique_service: TechniqueService
             ):
         """Initialize the technique extraction service.
@@ -30,7 +30,7 @@ class TechniqueExtractionService:
             mistral_service: Injected Mistral LLM service
             technique_service: Injected technique service for validation
         """
-        self.mistral_service = mistral_service
+        self.llm_service = llm_service
         self.technique_service = technique_service
 
     def _get_template(self, recipe_text: str) -> str:
@@ -130,7 +130,7 @@ class TechniqueExtractionService:
         return response
 
     def _sort_techniques(self, response: TechniqueExtractionResponse) -> TechniqueExtractionResponse:
-        """Sort techniques in each step by relevance (high to low), importance (high to low), and difficulty (low to high).
+        """Sort techniques in each step by importance (high to low), and difficulty (low to high).
 
         Args:
             response: The technique extraction response
@@ -147,10 +147,9 @@ class TechniqueExtractionService:
         )
 
         for step in response.steps:
-            # Sort by: relevance DESC, importance DESC, difficulty ASC
+            # Sort by: importance DESC, difficulty ASC
             step.techniques.sort(
                 key=lambda t: (
-                    -t.relevance,      # Higher relevance first (negate for descending)
                     -t.importance,     # Higher importance first (negate for descending)
                     t.difficulty       # Lower difficulty first (ascending)
                 )
@@ -175,7 +174,7 @@ class TechniqueExtractionService:
         prompt = self._get_template(recipe_text)
 
         # Call LLM API
-        llm_response = await self.mistral_service.call_llm_api(prompt)
+        llm_response = await self.llm_service.call_llm_api(prompt, TechniqueExtractionResponse.model_json_schema())
 
         if not llm_response:
             raise Exception("LLM returned no response")
@@ -188,17 +187,15 @@ class TechniqueExtractionService:
 
         # Validate and construct response using Pydantic
         try:
-            response = TechniqueExtractionResponse(**response_data)
+            # response = TechniqueExtractionResponse(**response_data)
+            response = TechniqueExtractionResponse.model_validate_json(llm_response)
         except Exception as e:
             raise Exception(f"Failed to construct response from LLM data: {str(e)}")
 
         # Validate technique IDs
         self._validate(response)
 
-        # Add difficulty levels to all techniques
         response = self._add_difficulty(response)
-
-        # Sort techniques by relevance, importance, and difficulty
         response = self._sort_techniques(response)
 
         # Debug log the response in YAML format

@@ -1,9 +1,8 @@
 id: 3d004ef3-9b83-4a65-aec7-0db4293bb7f4
 name: Baking
-description: Cooking food with dry heat in an oven at moderate temperatures
+description: Cooking food with dry heat in an oven at moderate temperatures (typically under 400°F), using gentler heat than roasting to create tender results ideal for breads, pastries, and casseroles. Unlike roasting's high-temperature browning, baking's moderate heat emphasizes even cooking and rise rather than caramelization.
 difficulty: 2
 tips:
-- Typically 300-375°F
 - More gentle than roasting
 - Used for breads, pastries, casseroles
 - Preheat oven for consistent results
