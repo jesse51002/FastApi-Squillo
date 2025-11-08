@@ -43,7 +43,7 @@ class Ingredient(BaseModel):
 
 class RecipeStep(BaseModel):
     """A single step in a recipe with associated cooking techniques."""
-    step_number: float = Field(..., description="The sequential number of this step (supports decimals like 1.1, 1.2 for sub-steps)")
+    step_number: str = Field(..., description="The sequential number of this step (supports decimals like 1.1, 1.2 for sub-steps)")
     instruction: str = Field(..., description="The instruction text for this step")
     techniques: list[TechniqueInfo] = Field(
         default_factory=list,

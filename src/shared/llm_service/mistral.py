@@ -21,6 +21,9 @@ COMPLETIONS_API_URL = 'https://api.mistral.ai/v1/chat/completions'
 class MistralModels(Enum):
     small = 'mistral-small-latest'
     medium = 'mistral-medium-latest'
+    large = 'mistral-large-latest'
+    reasoning_medium = 'magistral-medium-latest'
+    reasoning_small = 'magistral-small-latest'
 
 
 class MistralService:
@@ -46,9 +49,9 @@ class MistralService:
 
         # Build request using Pydantic models
         request = MistralRequest(
-            model=MistralModels.medium.value,
-            max_tokens=5000,
-            temperature=0.2,
+            model=MistralModels.large.value,
+            max_tokens=10000,
+            temperature=0.1,
             safe_prompt=True,
             response_format=ResponseFormat(type='json_object'),
             messages=[
@@ -69,12 +72,12 @@ class MistralService:
             authorization=f'Bearer {self.api_key}'
         )
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             try:
                 response = await client.post(
                     COMPLETIONS_API_URL,
                     headers=headers_model.model_dump(by_alias=True),
-                    json=request.model_dump(by_alias=True)
+                    json=request.model_dump(by_alias=True),
                 )
 
                 if response.status_code == 200:

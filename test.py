@@ -1,4 +1,5 @@
 import requests
+import time
 
 input_recipe = {
     "recipe_text": """# Nigerian Jollof Rice
@@ -52,5 +53,8 @@ Serve it hot with fried plantains, coleslaw, or your protein of choice.
 **Serves 6-8 | Cook time: About 90 minutes**"""
 }
 
+start_time = time.time()
 response = requests.post("http://localhost:8000/v1/techinque-extract", json=input_recipe)
 print(response.json())
+
+print(f"\n\nFinished in {time.time() - start_time} seconds")

@@ -138,6 +138,14 @@ class TechniqueExtractionService:
         Returns:
             TechniqueExtractionResponse: The response with sorted techniques in each step
         """
+        
+        response.steps.sort(
+            key=lambda t: (
+                int(t.step_number.split(".")[0]),
+                int(t.step_number.split(".")[1]) if len(t.step_number.split(".")) > 1 else 0
+            )
+        )
+
         for step in response.steps:
             # Sort by: relevance DESC, importance DESC, difficulty ASC
             step.techniques.sort(
