@@ -7,7 +7,7 @@ from enum import Enum
 
 import logging
 from src.core.config import settings
-from .base import BaseLLMService
+from src.shared.llm_service.base import BaseLLMService
 
 logger = logging.getLogger(__name__)
 

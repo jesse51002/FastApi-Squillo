@@ -15,6 +15,13 @@
 
 ## Python Standards
 
+**Imports**
+- **NEVER use relative imports** - always use absolute imports from `src`
+- Good: `from src.recipe_import_service.schemas.tiktok_schema import TikTokImportRequest`
+- Bad: `from .schemas.tiktok_schema import TikTokImportRequest`
+- Bad: `from ..services.tiktok_service import TiktokImportService`
+- This ensures clarity and prevents import errors when modules are moved
+
 **PEP 8 Naming**
 - Modules/packages: `my_module.py`
 - Classes: `UserService`, `PostRepository`
@@ -36,7 +43,7 @@
 
 **Async/Await**
 - Always await coroutines
-- Use async-compatible libraries (`aiohttp`, `asyncpg`, `aiofiles`)
+- Use async-compatible libraries (`httpx`, `aiohttp`, `asyncpg`, `aiofiles`)
 - Use `asyncio.gather()` for concurrent execution
 - Never use blocking operations (`time.sleep`, sync `requests`)
 - Always close connections with async context managers
