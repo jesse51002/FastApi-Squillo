@@ -17,6 +17,9 @@ class AppConfig(BaseSettings):
     claude_api_key: str
     gemini_api_key: str
 
+    # External API Configuration
+    ensemble_data_api_key: str
+
     # API Configuration
     api_title: str = 'FastAPI Squillo'
     api_version: str = '0.1.0'

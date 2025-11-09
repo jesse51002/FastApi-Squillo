@@ -7,6 +7,7 @@ from src.shared.llm_service.claude import ClaudeService
 from src.shared.llm_service.gemini import GeminiService
 from src.shared.technique_service.technique_service import TechniqueService
 from src.ai_recipe_engine.service import TechniqueExtractionService
+from src.recipe_import_service.services.tiktok_service import TiktokImportService
 
 
 class DependencyManager(containers.DeclarativeContainer):
@@ -25,6 +26,12 @@ class DependencyManager(containers.DeclarativeContainer):
         TechniqueExtractionService,
         llm_service=gemini_service,
         technique_service=technique_service
+    )
+
+    # TikTok Import Service
+    tiktok_import_service = providers.Singleton(
+        TiktokImportService,
+        mistral_service=mistral_service
     )
 
 

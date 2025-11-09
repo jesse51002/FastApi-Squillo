@@ -5,9 +5,10 @@ from typing import Optional, Literal
 
 
 class MessageContent(BaseModel):
-    """Content item in a message."""
+    """Content item in a message (supports text and audio for Voxtral)."""
     type: str = 'text'
-    text: str
+    text: Optional[str] = None
+    input_audio: Optional[str] = None  # Base64 encoded audio for Voxtral
 
 
 class Message(BaseModel):
@@ -27,7 +28,7 @@ class MistralRequest(BaseModel):
     max_tokens: int = Field(default=2000, gt=0)
     temperature: float = Field(default=0.2, ge=0.0, le=2.0)
     safe_prompt: bool = True
-    response_format: ResponseFormat
+    response_format: Optional[ResponseFormat]
     messages: list[Message]
 
     class Config:
