@@ -103,40 +103,27 @@ async def import_recipe(
         if recipe is None:
             return ImportResponse(recipe="", no_recipe_found=True)
 
+        # Extract techniques from the recipe text
+        extraction_result = await technique_service.extract_techniques(recipe)
+
+        # Create a StoredRecipe with the extraction result
+        stored_recipe = StoredRecipe(
+            **extraction_result.model_dump(),
+            recipe_id=DatabaseService.generate_recipe_id(),
+            user_id=request.user_id,
+            source_url=request.url,
+            thumbnail_url=None,
+        )
+
         # Save recipe to database if user_id is provided
         if request.user_id:
-            try:
-                # Extract techniques from the recipe text
-                extraction_result = await technique_service.extract_techniques(recipe)
-
-                # Create a StoredRecipe with the extraction result
-                stored_recipe = StoredRecipe(
-                    **extraction_result.model_dump(),
-                    recipe_id=DatabaseService.generate_recipe_id(),
-                    user_id=request.user_id,
-                    source_url=request.url,
-                    thumbnail_url=None,
-                )
-
-                # Save to database
-                await db_service.add_recipe_to_user(request.user_id, stored_recipe)
-                logger.info(
-                    f"Recipe '{stored_recipe.recipe_name}' saved for user {request.user_id}"
-                )
-            except ValueError as e:
-                logger.warning(
-                    f"Failed to save recipe for user {request.user_id}: {str(e)}"
-                )
-            except Exception:
-                logger.error(
-                    f"Unexpected error saving recipe for user {request.user_id}",
-                    exc_info=True,
-                )
-
-        if recipe is not None:
-            return ImportResponse(recipe=recipe, no_recipe_found=False)
+            logger.info(
+                f"Recipe '{stored_recipe.recipe_name}' saved for user {request.user_id}"
+            )
+            # Save to database
+            return await db_service.add_recipe_to_user(request.user_id, stored_recipe)
         else:
-            return ImportResponse(recipe="", no_recipe_found=True)
+            return db_service.create_recipe_display(stored_recipe)
 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

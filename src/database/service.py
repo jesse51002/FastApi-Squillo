@@ -72,7 +72,7 @@ class DatabaseService:
 
     async def add_recipe_to_user(
         self, user_id: str, recipe: StoredRecipe
-    ) -> StoredRecipe:
+    ) -> RecipeDisplayData:
         """Add a recipe to a user's collection.
 
         Args:
@@ -96,25 +96,29 @@ class DatabaseService:
             # Store the full recipe
             self._recipes[recipe.recipe_id] = recipe
 
-            technique_ids = set()
-            for step in recipe.steps:
-                for technique in step.techniques:
-                    technique_ids.add(technique.id)
-
-            # Create RecipeDisplayData for the user's list
-            recipe_display = RecipeDisplayData(
-                recipe_id=recipe.recipe_id,
-                recipe_name=recipe.recipe_name,
-                thumbnail_url=recipe.thumbnail_url,
-                difficulty=recipe.difficulty,
-                technique_ids=list(technique_ids),
-            )
-
             # Add recipe display data to user's list if not already present
-            if not any(r.recipe_id == recipe.recipe_id for r in user.recipes):
-                user.recipes.append(recipe_display)
+            if any(r.recipe_id == recipe.recipe_id for r in user.recipes):
+                raise ValueError(f"Recipe id {recipe.recipe_id} already exists")
 
-            return recipe
+            recipe_display = self.create_recipe_display(recipe)
+            user.recipes.append(recipe_display)
+
+            return recipe_display
+
+    def create_recipe_display(self, recipe: StoredRecipe):
+        technique_ids = set()
+        for step in recipe.steps:
+            for technique in step.techniques:
+                technique_ids.add(technique.id)
+
+        # Create RecipeDisplayData for the user's list
+        return RecipeDisplayData(
+            recipe_id=recipe.recipe_id,
+            recipe_name=recipe.recipe_name,
+            thumbnail_url=recipe.thumbnail_url,
+            difficulty=recipe.difficulty,
+            technique_ids=list(technique_ids),
+        )
 
     async def get_all_recipes_from_user(self, user_id: str) -> list[RecipeDisplayData]:
         """Retrieve all recipes belonging to a user.
