@@ -6,7 +6,6 @@ from typing import List, Optional
 
 class WebRecipeData(BaseModel):
     """Structured recipe data extracted from web pages."""
-
     title: str = Field(..., description="Recipe name/title")
     ingredients: List[str] = Field(..., description="List of ingredient strings")
     instructions: str = Field(..., description="Step-by-step cooking instructions")

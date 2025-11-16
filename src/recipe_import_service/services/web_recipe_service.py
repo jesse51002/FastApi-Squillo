@@ -259,7 +259,6 @@ class WebRecipeService(BaseImportService):
         except Exception as e:
             logger.error(f"Failed to extract recipe with LLM from: {str(e)}")
             raise e
-
     def _extract_readable_text(self, html_content: str) -> str:
         """
         Parses HTML content, removes scripts, styles, and other non-content

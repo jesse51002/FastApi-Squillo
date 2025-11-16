@@ -32,6 +32,7 @@ class ExctractionTechniqueInfo(BaseModel):
     difficulty: Optional[TechniqueDifficulty] = Field(
         default=None, description="Techinque difficulty (leave empty in llm call)"
     )
+    estimated_time: float = Field(..., description="The estimated amount of time the step will take in minutes (decimals allowed)")
 
 
 class ExctractionIngredient(BaseModel):
