@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/techinque-extract",
+    "/technique-extract",
     response_model=TechniqueExtractionResponse,
     status_code=status.HTTP_200_OK,
     summary="Extract cooking techniques from recipe",

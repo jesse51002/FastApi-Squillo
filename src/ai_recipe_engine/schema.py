@@ -17,6 +17,12 @@ class TechniqueExtractionRequest(BaseModel):
     )
 
 
+class RecipeDifficulty(IntEnum):
+    simple = 1
+    medium = 2
+    complex = 3
+
+
 class TechniqueImportance(IntEnum):
     not_important = 1
     small_importance = 2
@@ -77,3 +83,4 @@ class TechniqueExtractionResponse(BaseModel):
         ..., description="List of recipe steps with techniques"
     )
     status: str = Field(default="success", description="Status of the extraction")
+    difficulty: RecipeDifficulty = Field(..., description="Difficulty of recipe (1-3)")

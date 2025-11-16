@@ -60,9 +60,6 @@ class ClaudeService(BaseLLMService):
         Raises:
             Exception: If the API call fails or times out
         """
-
-        logger.debug(f"Input prompt:\\n\\n {input_prompt}")
-
         # Build base request
         request_data = {
             "model": ClaudeModels.sonnet.value,

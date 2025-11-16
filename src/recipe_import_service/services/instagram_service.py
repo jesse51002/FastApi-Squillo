@@ -71,9 +71,6 @@ class InstagramImportService(BaseImportService):
         try:
             # Step 3: Create recipe from audio and description
             recipe = await self._create_text_recipe_with_audio(audio_file, description)
-
-            logger.debug(f"Final Recipe: \n {recipe}")
-
             return recipe
         finally:
             # Clean up temporary audio file

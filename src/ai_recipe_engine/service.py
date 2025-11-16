@@ -191,6 +191,8 @@ class TechniqueExtractionService:
         # Generate formatted prompt
         prompt = self._get_template(recipe_text)
 
+        logger.debug(f"Input prompt:\\n\\n {prompt}")
+
         # Call LLM API
         llm_response = await self.llm_service.call_llm_api(
             prompt, TechniqueExtractionResponse.model_json_schema()

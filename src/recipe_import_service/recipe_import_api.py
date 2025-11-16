@@ -15,6 +15,9 @@ from src.recipe_import_service.schemas.import_schema import (
     ImportRequest,
     ImportResponse,
 )
+from src.database.service import DatabaseService
+from src.database.schemas.recipe_schema import StoredRecipe
+from src.ai_recipe_engine.service import TechniqueExtractionService
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +48,10 @@ async def import_recipe(
     web_service: WebRecipeService = Depends(
         Provide[DependencyManager.web_recipe_service]
     ),
+    technique_service: TechniqueExtractionService = Depends(
+        Provide[DependencyManager.technique_extraction_service]
+    ),
+    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
 ) -> ImportResponse:
     """Import recipe from any supported platform.
 
@@ -57,6 +64,8 @@ async def import_recipe(
         youtube_service: Injected YouTube import service
         instagram_service: Injected Instagram import service
         web_service: Injected web recipe import service
+        technique_service: Injected technique extraction service
+        db_service: Injected database service
 
     Returns:
         ImportResponse: Extracted recipe in markdown format
@@ -91,10 +100,38 @@ async def import_recipe(
             case Platform.WEB:
                 recipe = await web_service.url_to_text_recipe(request.url)
 
-        # TODO: Save recipe to database if user_id is provided
+        if recipe is None:
+            return ImportResponse(recipe="", no_recipe_found=True)
+
+        # Save recipe to database if user_id is provided
         if request.user_id and recipe:
-            # Implement database save logic here
-            pass
+            try:
+                # Extract techniques from the recipe text
+                extraction_result = await technique_service.extract_techniques(recipe)
+
+                # Create a StoredRecipe with the extraction result
+                stored_recipe = StoredRecipe(
+                    **extraction_result.model_dump(),
+                    recipe_id=DatabaseService.generate_recipe_id(),
+                    user_id=request.user_id,
+                    source_url=request.url,
+                    thumbnail_url=None,
+                )
+
+                # Save to database
+                await db_service.add_recipe_to_user(request.user_id, stored_recipe)
+                logger.info(
+                    f"Recipe '{stored_recipe.recipe_name}' saved for user {request.user_id}"
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"Failed to save recipe for user {request.user_id}: {str(e)}"
+                )
+            except Exception:
+                logger.error(
+                    f"Unexpected error saving recipe for user {request.user_id}",
+                    exc_info=True,
+                )
 
         if recipe is not None:
             return ImportResponse(recipe=recipe, no_recipe_found=False)

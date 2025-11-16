@@ -11,6 +11,7 @@ from src.recipe_import_service.services.tiktok_service import TiktokImportServic
 from src.recipe_import_service.services.youtube_service import YouTubeImportService
 from src.recipe_import_service.services.instagram_service import InstagramImportService
 from src.recipe_import_service.services.web_recipe_service import WebRecipeService
+from src.database.service import DatabaseService
 
 
 class DependencyManager(containers.DeclarativeContainer):
@@ -65,6 +66,9 @@ class DependencyManager(containers.DeclarativeContainer):
     web_recipe_service = providers.Singleton(
         WebRecipeService, mistral_service=mistral_service
     )
+
+    # Database Service
+    database_service = providers.Singleton(DatabaseService)
 
 
 # Global container instance

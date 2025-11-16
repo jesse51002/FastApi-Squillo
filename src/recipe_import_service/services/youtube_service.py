@@ -103,8 +103,6 @@ class YouTubeImportService(BaseImportService):
                 transcript=combined_text, description=""
             )
 
-        logger.debug(f"Final Recipe: \n {recipe}")
-
         return recipe
 
     def _extract_video_id(self, url: str) -> str:
@@ -279,7 +277,7 @@ class YouTubeImportService(BaseImportService):
             transcript = transcript.replace("&lt;", "<")
             transcript = transcript.replace("&gt;", ">")
 
-            logger.debug(f"Transcript extracted: {len(transcript)} characters")
+            logger.info(f"Youtube transcript extracted: {len(transcript)} characters")
 
             return transcript
 

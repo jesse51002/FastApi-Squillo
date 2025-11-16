@@ -219,8 +219,6 @@ class WebRecipeService(BaseImportService):
         try:
             clean_content = self._extract_readable_text(html_content)
 
-            logger.debug(clean_content)
-
             # Get JSON schema from LlmOutputFormat
             json_schema = LlmOutputFormat.model_json_schema()
             str_json_schema = json.dumps(json_schema, indent=2)
