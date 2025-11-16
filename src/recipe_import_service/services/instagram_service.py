@@ -1,5 +1,6 @@
 """Instagram import service for extracting recipes from Instagram videos."""
 
+import re
 import json
 from typing import Optional
 from pathlib import Path
@@ -91,8 +92,6 @@ class InstagramImportService(BaseImportService):
         Raises:
             ValueError: If URL format is invalid
         """
-        import re
-
         # If it's already a shortcode (alphanumeric + - and _)
         if re.match(r'^[A-Za-z0-9_-]+$', url) and '/' not in url:
             return url
