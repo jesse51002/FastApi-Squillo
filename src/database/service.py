@@ -23,14 +23,13 @@ class DatabaseService:
 
     _users: dict[str, User] = {}
     _recipes: dict[str, StoredRecipe] = {}
-    _lock: asyncio.Lock = asyncio.Lock()
 
     def __init__(self) -> None:
         """Initialize the database service.
 
         Note: Storage is class-level, so all instances share the same data.
         """
-        pass
+        self._lock: asyncio.Lock = asyncio.Lock()
 
     async def get_user(self, user_id: str) -> Optional[User]:
         """Retrieve a user by their ID.

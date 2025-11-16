@@ -88,4 +88,4 @@ class TechniqueExtractionResponse(BaseModel):
     )
     status: str = Field(default="success", description="Status of the extraction")
     difficulty: RecipeDifficulty = Field(..., description="Difficulty of recipe (1-3)")
-    servings: int = Field(..., description="How many services this recipe has")
+    servings: int = Field(..., description="How many servings this recipe has")
