@@ -284,7 +284,4 @@ class YouTubeImportService(BaseImportService):
             return transcript
 
         except Exception as e:
-            logger.error(
-                f"Failed to fetch or parse transcript link {transcript_url}: {e}"
-            )
             raise Exception(f"Transcript extraction failed: {str(e)}")

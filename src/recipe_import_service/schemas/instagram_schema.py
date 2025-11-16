@@ -6,12 +6,14 @@ from typing import List
 
 class InstagramEnsembleParams(BaseModel):
     """Parameters for Ensemble Data Instagram API request."""
+
     code: str = Field(..., description="Instagram post shortcode")
     token: str = Field(..., description="API token for authentication")
 
 
 class CaptionEdgeNode(BaseModel):
     """Instagram caption node."""
+
     text: str = Field(..., description="Caption text")
 
     class Config:
@@ -20,6 +22,7 @@ class CaptionEdgeNode(BaseModel):
 
 class CaptionEdge(BaseModel):
     """Instagram caption edge."""
+
     node: CaptionEdgeNode = Field(..., description="Caption node")
 
     class Config:
@@ -28,6 +31,7 @@ class CaptionEdge(BaseModel):
 
 class MediaToCaption(BaseModel):
     """Instagram media to caption relationship."""
+
     edges: List[CaptionEdge] = Field(default_factory=list, description="Caption edges")
 
     class Config:
@@ -50,6 +54,7 @@ class InstagramVideoData(BaseModel):
 
 class InstagramResponse(BaseModel):
     """Full response from Instagram scraper."""
+
     data: InstagramVideoData = Field(..., description="Instagram video data")
 
     class Config:

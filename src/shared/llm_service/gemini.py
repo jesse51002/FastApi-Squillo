@@ -88,5 +88,4 @@ class GeminiService(BaseLLMService):
             raise Exception("No response from gemini")
 
         except Exception as e:
-            logger.error(f"Gemini API call failed: {str(e)}")
-            raise e
+            raise Exception(f"Gemini API call failed: {str(e)}")

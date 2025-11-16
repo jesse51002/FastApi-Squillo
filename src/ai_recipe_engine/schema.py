@@ -25,17 +25,16 @@ class TechniqueImportance(IntEnum):
     extreme_importance = 5
 
 
-class ExctractionTechniqueInfo(BaseModel):
+class ExtractionTechniqueInfo(BaseModel):
     id: str = Field(..., description="ID of the chosen technique")
     name: str = Field(..., description="Name of technique chosen")
     importance: TechniqueImportance = Field(..., description="Technique Importance")
     difficulty: Optional[TechniqueDifficulty] = Field(
         default=None, description="Techinque difficulty (leave empty in llm call)"
     )
-    estimated_time: float = Field(..., description="The estimated amount of time the step will take in minutes (decimals allowed)")
 
 
-class ExctractionIngredient(BaseModel):
+class ExtractionIngredient(BaseModel):
     """A single ingredient with quantity and unit."""
 
     name: str = Field(..., description="Name of the ingredient")
@@ -49,7 +48,7 @@ class ExctractionIngredient(BaseModel):
     )
 
 
-class ExctractionRecipeStep(BaseModel):
+class ExtractionRecipeStep(BaseModel):
     """A single step in a recipe with associated cooking techniques."""
 
     step_number: str = Field(
@@ -57,7 +56,7 @@ class ExctractionRecipeStep(BaseModel):
         description="The sequential number of this step (supports decimals like 1.1, 1.2 for sub-steps)",
     )
     instruction: str = Field(..., description="The instruction text for this step")
-    techniques: list[ExctractionTechniqueInfo] = Field(
+    techniques: list[ExtractionTechniqueInfo] = Field(
         default_factory=list,
         description="List of cooking techniques used in this step with relevance and importance ratings",
     )
@@ -71,10 +70,10 @@ class TechniqueExtractionResponse(BaseModel):
     """Response schema for technique extraction."""
 
     recipe_name: str = Field(..., description="Name of the recipe")
-    ingredients: list[ExctractionIngredient] = Field(
+    ingredients: list[ExtractionIngredient] = Field(
         ..., description="List of ingredients needed for the recipe"
     )
-    steps: list[ExctractionRecipeStep] = Field(
+    steps: list[ExtractionRecipeStep] = Field(
         ..., description="List of recipe steps with techniques"
     )
     status: str = Field(default="success", description="Status of the extraction")

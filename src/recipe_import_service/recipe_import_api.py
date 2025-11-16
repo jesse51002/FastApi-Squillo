@@ -1,5 +1,7 @@
 """API router for recipe import endpoints."""
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from dependency_injector.wiring import inject, Provide
 
@@ -14,6 +16,7 @@ from src.recipe_import_service.schemas.import_schema import (
     ImportResponse,
 )
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/v1/import",
@@ -101,6 +104,7 @@ async def import_recipe(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
+        logger.error("Recipe import failed", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Recipe import failed: {str(e)}",

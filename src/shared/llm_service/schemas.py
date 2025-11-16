@@ -24,7 +24,7 @@ class Message(BaseModel):
     role: str
     content: list[Union[MistralVoiceMessageContent, MistralTextMessageContent]]
 
- 
+
 class ResponseFormat(BaseModel):
     """Response format configuration."""
 

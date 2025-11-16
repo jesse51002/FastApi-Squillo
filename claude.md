@@ -48,6 +48,13 @@
 - Never use blocking operations (`time.sleep`, sync `requests`)
 - Always close connections with async context managers
 
+**Dependency Management**
+- **ALWAYS use `poetry add <package>` to add dependencies**
+- **NEVER manually modify pyproject.toml or poetry.lock**
+- Use `poetry add --group dev <package>` for development dependencies
+- Use `poetry add --group test <package>` for test dependencies
+- Let Poetry handle version resolution and lock file updates
+
 ## Project Structure
 
 **Domain-Driven Architecture**
@@ -212,5 +219,12 @@ src/
 - [ ] Complete documentation
 - [ ] No secrets in code
 - [ ] Proper error messages
+
+## Linting
+
+**IMPORTANT: Always run `make lint` after making code changes**
+- Run `make lint` before committing any changes
+- Fix all linting errors and warnings
+- This ensures code quality and consistency across the project
 
 **Remember: Code is read more often than written. Prioritize clarity, modularity, and maintainability.**

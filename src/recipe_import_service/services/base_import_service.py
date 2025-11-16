@@ -86,10 +86,8 @@ class BaseImportService:
             return llm_output.recipe
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
         except Exception as e:
-            logger.error(f"Failed to validate LLM response: {e}")
             raise Exception(f"LLM response validation failed: {str(e)}")
 
     async def _create_text_recipe_with_transcript(
@@ -140,8 +138,6 @@ class BaseImportService:
             return llm_output.recipe
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
         except Exception as e:
-            logger.error(f"Failed to validate LLM response: {e}")
             raise Exception(f"LLM response validation failed: {str(e)}")

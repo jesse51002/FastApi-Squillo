@@ -16,6 +16,7 @@ class YouTubeEnsembleParams(BaseModel):
 
 class CaptionTrack(BaseModel):
     """YouTube caption track information."""
+
     baseUrl: str = Field(..., description="URL to fetch the caption XML")
     name: Dict[str, str] = Field(..., description="Caption track name")
     vssId: str = Field(..., description="Caption track VSS ID")
@@ -55,6 +56,7 @@ class CaptionsData(BaseModel):
 
 class ThumbnailItem(BaseModel):
     """YouTube thumbnail item."""
+
     url: str = Field(..., description="Thumbnail URL")
     width: int = Field(..., description="Thumbnail width")
     height: int = Field(..., description="Thumbnail height")
@@ -65,6 +67,7 @@ class ThumbnailItem(BaseModel):
 
 class ThumbnailData(BaseModel):
     """YouTube thumbnail data."""
+
     thumbnails: List[ThumbnailItem] = Field(..., description="Available thumbnails")
 
     class Config:
@@ -73,6 +76,7 @@ class ThumbnailData(BaseModel):
 
 class VideoDetails(BaseModel):
     """YouTube video details from Ensemble API."""
+
     videoId: str = Field(..., description="YouTube video ID")
     title: str = Field(..., description="Video title")
     lengthSeconds: str = Field(..., description="Video duration in seconds")
@@ -101,6 +105,7 @@ class VideoFormat(BaseModel):
 
 class StreamingData(BaseModel):
     """YouTube streaming data containing video formats."""
+
     formats: List[VideoFormat] = Field(..., description="Available video formats")
 
     class Config:
@@ -124,6 +129,7 @@ class YouTubeData(BaseModel):
 
 class YouTubeEnsembleResponse(BaseModel):
     """Full response from Ensemble YouTube API."""
+
     data: YouTubeData = Field(..., description="YouTube video data")
 
     class Config:

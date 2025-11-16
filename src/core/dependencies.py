@@ -53,20 +53,17 @@ class DependencyManager(containers.DeclarativeContainer):
 
     # YouTube Import Service (handles both regular videos and Shorts)
     youtube_import_service = providers.Singleton(
-        YouTubeImportService,
-        mistral_service=mistral_service
+        YouTubeImportService, mistral_service=mistral_service
     )
 
     # Instagram Import Service
     instagram_import_service = providers.Singleton(
-        InstagramImportService,
-        mistral_service=mistral_service
+        InstagramImportService, mistral_service=mistral_service
     )
 
     # Web Recipe Import Service
     web_recipe_service = providers.Singleton(
-        WebRecipeService,
-        mistral_service=mistral_service
+        WebRecipeService, mistral_service=mistral_service
     )
 
 

@@ -44,7 +44,7 @@ class TechniqueService:
 
                 if technique.id in self.techniques:
                     err_msg = f"Duplicate id in {self.techniques[technique.id].name} and {technique.name}"
-                    logger.error(err_msg)
+                    logger.error(err_msg, exc_info=True)
                     raise Exception(err_msg)
 
                 self.techniques[technique.id] = technique

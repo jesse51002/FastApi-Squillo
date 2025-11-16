@@ -69,10 +69,6 @@ class WebRecipeService(BaseImportService):
                 },
                 timeout=30.0,
             )
-
-            if response.status_code == 403:
-                logger.error(f"Request to scrape {url} was forbbidden")
-
             response.raise_for_status()
             html_content = response.text
 
@@ -250,15 +246,13 @@ class WebRecipeService(BaseImportService):
                 return llm_output.recipe
 
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM response as JSON: {e}")
                 raise Exception(f"Invalid JSON response from LLM: {str(e)}")
             except Exception as e:
-                logger.error(f"Failed to validate LLM response: {e}")
                 raise Exception(f"LLM response validation failed: {str(e)}")
 
         except Exception as e:
-            logger.error(f"Failed to extract recipe with LLM from: {str(e)}")
-            raise e
+            raise Exception(f"LLM call failed to parse web recipe: {str(e)}")
+
     def _extract_readable_text(self, html_content: str) -> str:
         """
         Parses HTML content, removes scripts, styles, and other non-content

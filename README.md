@@ -25,7 +25,12 @@ A FastAPI-based recipe import and AI recipe engine service that extracts cooking
    poetry install
    ```
 
-4. **Configure environment variables**
+4. **Install pre-commit hooks**
+   ```bash
+   poetry run pre-commit install
+   ```
+
+5. **Configure environment variables**
 
    Create a `.env` file in the project root with the following API keys:
    ```env
@@ -63,6 +68,15 @@ curl http://localhost:8000/health
 ## Development
 
 ### Code Quality
+
+**Pre-commit hooks** (automatically runs on git commit):
+- Formats code with `make format`
+- Lints code with `make lint`
+
+Install pre-commit hooks:
+```bash
+poetry run pre-commit install
+```
 
 **Lint code:**
 ```bash

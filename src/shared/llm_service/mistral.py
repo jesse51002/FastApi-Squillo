@@ -182,7 +182,6 @@ class MistralService(BaseLLMService):
                         return output
                     return None
                 else:
-                    logger.error(f"Voxtral API Error: {response.status_code}")
                     raise Exception(
                         f"Voxtral call failed with status {response.status_code}"
                     )

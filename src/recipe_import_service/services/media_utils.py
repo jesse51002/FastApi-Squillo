@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Platform(str, Enum):
     """Supported platforms for recipe import."""
+
     TIKTOK = "tiktok"
     YOUTUBE = "youtube"
     INSTAGRAM = "instagram"

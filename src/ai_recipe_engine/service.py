@@ -207,7 +207,6 @@ class TechniqueExtractionService:
 
         # Validate and construct response using Pydantic
         try:
-            # response = TechniqueExtractionResponse(**response_data)
             response = TechniqueExtractionResponse.model_validate_json(llm_response)
         except Exception as e:
             raise Exception(f"Failed to construct response from LLM data: {str(e)}")
