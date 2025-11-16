@@ -26,7 +26,7 @@ class TemplateFormatter:
             raise FileNotFoundError(f"Template file not found: {file_path}")
 
         try:
-            return path.read_text(encoding='utf-8')
+            return path.read_text(encoding="utf-8")
         except Exception as e:
             raise IOError(f"Error reading template file: {str(e)}")
 

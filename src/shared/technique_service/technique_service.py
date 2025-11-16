@@ -1,6 +1,5 @@
 """Service for loading and managing technique definitions from YAML files."""
 
-from pathlib import Path
 import yaml
 import logging
 
@@ -8,6 +7,7 @@ from src.core.constants import TECHNIQUES_PATH
 from src.shared.technique_service.schemas import Technique
 
 logger = logging.getLogger(__file__)
+
 
 class TechniqueService:
     """Service for loading and managing technique definitions.
@@ -32,10 +32,12 @@ class TechniqueService:
             return
 
         # Find all YAML files recursively
-        yaml_files = list(TECHNIQUES_PATH.rglob("**/*.yaml")) + list(TECHNIQUES_PATH.rglob("**/*.yml"))
+        yaml_files = list(TECHNIQUES_PATH.rglob("**/*.yaml")) + list(
+            TECHNIQUES_PATH.rglob("**/*.yml")
+        )
 
         for yaml_file in yaml_files:
-            with open(yaml_file, 'r', encoding='utf-8') as file:
+            with open(yaml_file, "r", encoding="utf-8") as file:
                 technique_data = yaml.safe_load(file)
             if technique_data:
                 technique = Technique(**technique_data)
@@ -44,7 +46,6 @@ class TechniqueService:
                     err_msg = f"Duplicate id in {self.techniques[technique.id].name} and {technique.name}"
                     logger.error(err_msg)
                     raise Exception(err_msg)
-
 
                 self.techniques[technique.id] = technique
 
@@ -57,12 +58,3 @@ class TechniqueService:
             Dictionary mapping technique names to Technique objects.
         """
         return self.techniques
-
-
-
-
-
-
-
-
-

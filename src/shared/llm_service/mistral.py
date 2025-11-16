@@ -14,22 +14,22 @@ from .schemas import (
     ResponseFormat,
     MistralRequest,
     MistralHeaders,
-    MistralResponse
+    MistralResponse,
 )
 
 logger = logging.getLogger(__name__)
 
-COMPLETIONS_API_URL = 'https://api.mistral.ai/v1/chat/completions'
+COMPLETIONS_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 
 class MistralModels(Enum):
-    small = 'mistral-small-latest'
-    medium = 'mistral-medium-latest'
-    large = 'mistral-large-latest'
-    reasoning_medium = 'magistral-medium-latest'
-    reasoning_small = 'magistral-small-latest'
-    voxtral_small = 'voxtral-small-latest'
-    voxtral_mini = 'voxtral-mini-latest'
+    small = "mistral-small-latest"
+    medium = "mistral-medium-latest"
+    large = "mistral-large-latest"
+    reasoning_medium = "magistral-medium-latest"
+    reasoning_small = "magistral-small-latest"
+    voxtral_small = "voxtral-small-latest"
+    voxtral_mini = "voxtral-mini-latest"
 
 
 class MistralService(BaseLLMService):
@@ -50,7 +50,7 @@ class MistralService(BaseLLMService):
         self,
         input_prompt: str,
         json_schema: Optional[dict[str, Any]] = None,
-        model: MistralModels = MistralModels.medium
+        model: MistralModels = MistralModels.medium,
     ) -> Optional[str]:
         """Make the API call to the LLM service.
 
@@ -74,23 +74,16 @@ class MistralService(BaseLLMService):
             max_tokens=10000,
             temperature=0.1,
             safe_prompt=True,
-            response_format=ResponseFormat(type='json_object'),
+            response_format=ResponseFormat(type="json_object"),
             messages=[
                 Message(
-                    role='user',
-                    content=[
-                        MistralTextMessageContent(
-                            text=input_prompt
-                        )
-                    ]
+                    role="user", content=[MistralTextMessageContent(text=input_prompt)]
                 )
-            ]
+            ],
         )
 
         # Build headers using Pydantic model
-        headers_model = MistralHeaders(
-            authorization=f'Bearer {self.api_key}'
-        )
+        headers_model = MistralHeaders(authorization=f"Bearer {self.api_key}")
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             try:
@@ -109,7 +102,9 @@ class MistralService(BaseLLMService):
                     return None
                 else:
                     # print(f"LLM API Error: {response.status_code} - {response.text}")
-                    raise Exception(f"LLM call failed with status {response.status_code}")
+                    raise Exception(
+                        f"LLM call failed with status {response.status_code}"
+                    )
 
             except httpx.TimeoutException:
                 raise Exception("LLM API request timed out")
@@ -144,9 +139,9 @@ class MistralService(BaseLLMService):
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
         # Read and encode audio file to base64
-        with open(audio_file_path, 'rb') as audio_file:
+        with open(audio_file_path, "rb") as audio_file:
             audio_data = audio_file.read()
-            audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+            audio_base64 = base64.b64encode(audio_data).decode("utf-8")
 
         # Build multimodal request with audio and text
         request = MistralRequest(
@@ -154,28 +149,24 @@ class MistralService(BaseLLMService):
             max_tokens=10000,
             temperature=0.1,
             safe_prompt=True,
-            response_format=ResponseFormat(type='json_object') if json_schema else None,
+            response_format=ResponseFormat(type="json_object") if json_schema else None,
             messages=[
                 Message(
-                    role='user',
+                    role="user",
                     content=[
-                        MistralVoiceMessageContent(
-                            input_audio=audio_base64
-                        ),
-                        MistralTextMessageContent(
-                            text=text_prompt
-                        )
-                    ]
+                        MistralVoiceMessageContent(input_audio=audio_base64),
+                        MistralTextMessageContent(text=text_prompt),
+                    ],
                 )
-            ]
+            ],
         )
 
         # Build headers using Pydantic model
-        headers_model = MistralHeaders(
-            authorization=f'Bearer {self.api_key}'
-        )
+        headers_model = MistralHeaders(authorization=f"Bearer {self.api_key}")
 
-        async with httpx.AsyncClient(timeout=180.0) as client:  # Longer timeout for audio
+        async with httpx.AsyncClient(
+            timeout=180.0
+        ) as client:  # Longer timeout for audio
             try:
                 response = await client.post(
                     COMPLETIONS_API_URL,
@@ -192,7 +183,9 @@ class MistralService(BaseLLMService):
                     return None
                 else:
                     logger.error(f"Voxtral API Error: {response.status_code}")
-                    raise Exception(f"Voxtral call failed with status {response.status_code}")
+                    raise Exception(
+                        f"Voxtral call failed with status {response.status_code}"
+                    )
 
             except httpx.TimeoutException:
                 raise Exception("Voxtral API request timed out")

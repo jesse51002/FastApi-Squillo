@@ -1,7 +1,6 @@
 from google import genai
 from google.genai import types
 
-from pydantic import BaseModel, Field, create_model
 from typing import Optional, Any
 from enum import Enum
 
@@ -14,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 class GeminiModels(Enum):
     """Available Gemini model versions."""
-    flash = 'gemini-2.5-flash'
-    pro = 'gemini-1.5-pro-latest'
-    flash_lite = 'gemini-2.5-flash-lite'
+
+    flash = "gemini-2.5-flash"
+    pro = "gemini-1.5-pro-latest"
+    flash_lite = "gemini-2.5-flash-lite"
 
 
 class GeminiService(BaseLLMService):
@@ -35,9 +35,7 @@ class GeminiService(BaseLLMService):
         return GeminiModels
 
     async def call_llm_api(
-        self,
-        input_prompt: str,
-        json_schema: Optional[dict[str, Any]] = None
+        self, input_prompt: str, json_schema: Optional[dict[str, Any]] = None
     ) -> Optional[str]:
         """Make the API call to the Gemini API service using official SDK.
 
@@ -70,23 +68,23 @@ class GeminiService(BaseLLMService):
                 config["response_mime_type"] = "application/json"
                 config["response_json_schema"] = json_schema
 
-                logger.debug(f"Using JSON schema with Gemini")
+                logger.debug("Using JSON schema with Gemini")
 
             # Make the API call using the official SDK
             response = self.client.models.generate_content(
                 model=GeminiModels.flash.value,
                 contents=input_prompt,
                 config=types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_budget= 2500),
+                    thinking_config=types.ThinkingConfig(thinking_budget=2500),
                     response_json_schema=json_schema,
-                    response_mime_type="application/json" if json_schema else None
+                    response_mime_type="application/json" if json_schema else None,
                 ),
             )
 
             # Extract and return the text response
             if response.text:
                 return response.text
-            
+
             raise Exception("No response from gemini")
 
         except Exception as e:

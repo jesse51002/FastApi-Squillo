@@ -6,18 +6,27 @@ import logging
 import httpx
 
 from src.shared.llm_service.mistral import MistralService, MistralModels
-from src.recipe_import_service.schemas.tiktok_schema import TikTokScrapeResponse, EnsembleApiParams
+from src.recipe_import_service.schemas.tiktok_schema import (
+    TikTokScrapeResponse,
+    EnsembleApiParams,
+)
 from src.recipe_import_service.services.base_import_service import BaseImportService
-from src.recipe_import_service.services.media_utils import extract_audio_from_video, download_video
+from src.recipe_import_service.services.media_utils import (
+    extract_audio_from_video,
+    download_video,
+)
 from src.core.config import settings
 
 
 logger = logging.getLogger(__name__)
 
+
 class TiktokImportService(BaseImportService):
 
     MODEL = MistralModels.voxtral_small
-    TEMPLATE_PATH = Path(__file__).parent.parent / 'templates' / 'audio_recipe_template.md'
+    TEMPLATE_PATH = (
+        Path(__file__).parent.parent / "templates" / "audio_recipe_template.md"
+    )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/tt/post/info"
 
     def __init__(self, mistral_service: MistralService):
@@ -61,7 +70,6 @@ class TiktokImportService(BaseImportService):
             # Clean up temporary audio file
             if audio_file.exists():
                 audio_file.unlink()
-        
 
     async def _download_tiktok(self, url: str) -> Tuple[str, Path]:
         """Download TikTok video and extract description using Ensemble API.
@@ -76,20 +84,18 @@ class TiktokImportService(BaseImportService):
             Exception: If API call or download fails
         """
         # Build API parameters using schema
-        params = EnsembleApiParams(
-            url=url,
-            token=settings.ensemble_data_api_key
-        )
+        params = EnsembleApiParams(url=url, token=settings.ensemble_data_api_key)
 
         # Fetch TikTok data from Ensemble API
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
-                self.ENSEMBLE_API_URL,
-                params=params.model_dump()
+                self.ENSEMBLE_API_URL, params=params.model_dump()
             )
 
         if response.status_code != 200:
-            raise Exception(f"Ensemble API request failed with status {response.status_code}")
+            raise Exception(
+                f"Ensemble API request failed with status {response.status_code}"
+            )
 
         data = response.json()
         tiktok_response = TikTokScrapeResponse(**data)
@@ -104,9 +110,9 @@ class TiktokImportService(BaseImportService):
         # Parse cookies from string
         cookies = {}
         if cookie_string:
-            for cookie_part in cookie_string.split('; '):
-                if '=' in cookie_part:
-                    key, value = cookie_part.split('=', 1)
+            for cookie_part in cookie_string.split("; "):
+                if "=" in cookie_part:
+                    key, value = cookie_part.split("=", 1)
                     cookies[key.strip()] = value.strip()
 
         # Download video using utility function
@@ -114,7 +120,7 @@ class TiktokImportService(BaseImportService):
             download_url=download_url,
             video_id=video_id,
             cookies=cookies,
-            referer='https://www.tiktok.com/'
+            referer="https://www.tiktok.com/",
         )
 
         return description, video_file
@@ -131,8 +137,8 @@ class TiktokImportService(BaseImportService):
         Raises:
             Exception: If mock data cannot be loaded
         """
-        temp_mock_json = Path('resources/tiktok/ingredient_desc.json')
-        temp_video_file = Path('resources/tiktok/ingredient_desc.mp4')
+        temp_mock_json = Path("resources/tiktok/ingredient_desc.json")
+        temp_video_file = Path("resources/tiktok/ingredient_desc.mp4")
 
         # Load mock TikTok data
         with open(temp_mock_json, "r") as f:

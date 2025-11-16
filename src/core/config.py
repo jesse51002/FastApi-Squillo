@@ -21,24 +21,21 @@ class AppConfig(BaseSettings):
     ensemble_data_api_key: str
 
     # API Configuration
-    api_title: str = 'FastAPI Squillo'
-    api_version: str = '0.1.0'
-    api_description: str = 'FastAPI application with LLM service integration'
+    api_title: str = "FastAPI Squillo"
+    api_version: str = "0.1.0"
+    api_description: str = "FastAPI application with LLM service integration"
 
     # CORS Configuration
-    cors_origins: str = '*'
+    cors_origins: str = "*"
     cors_credentials: bool = True
-    cors_methods: str = '*'
-    cors_headers: str = '*'
+    cors_methods: str = "*"
+    cors_headers: str = "*"
 
     # Logging Configuration
-    log_level: str = 'DEBUG'
+    log_level: str = "DEBUG"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
 
 
@@ -60,7 +57,7 @@ def setup_logging(log_level: str | None = None) -> None:
     # Create formatter
     formatter = logging.Formatter(
         fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Setup root logger

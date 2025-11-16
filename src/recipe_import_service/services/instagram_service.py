@@ -11,10 +11,13 @@ import httpx
 from src.shared.llm_service.mistral import MistralService, MistralModels
 from src.recipe_import_service.schemas.instagram_schema import (
     InstagramResponse,
-    InstagramEnsembleParams
+    InstagramEnsembleParams,
 )
 from src.recipe_import_service.services.base_import_service import BaseImportService
-from src.recipe_import_service.services.media_utils import extract_audio_from_video, download_video
+from src.recipe_import_service.services.media_utils import (
+    extract_audio_from_video,
+    download_video,
+)
 from src.core.config import settings
 
 
@@ -25,7 +28,9 @@ class InstagramImportService(BaseImportService):
     """Service for importing recipes from Instagram videos."""
 
     MODEL = MistralModels.voxtral_small
-    TEMPLATE_PATH = Path(__file__).parent.parent / 'templates' / 'audio_recipe_template.md'
+    TEMPLATE_PATH = (
+        Path(__file__).parent.parent / "templates" / "audio_recipe_template.md"
+    )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/instagram/post/details"
 
     def __init__(self, mistral_service: MistralService):
@@ -93,13 +98,13 @@ class InstagramImportService(BaseImportService):
             ValueError: If URL format is invalid
         """
         # If it's already a shortcode (alphanumeric + - and _)
-        if re.match(r'^[A-Za-z0-9_-]+$', url) and '/' not in url:
+        if re.match(r"^[A-Za-z0-9_-]+$", url) and "/" not in url:
             return url
 
         # Try various URL patterns
         patterns = [
-            r'instagram\.com/(?:p|reel)/([A-Za-z0-9_-]+)',
-            r'instagram\.com/(?:tv)/([A-Za-z0-9_-]+)'
+            r"instagram\.com/(?:p|reel)/([A-Za-z0-9_-]+)",
+            r"instagram\.com/(?:tv)/([A-Za-z0-9_-]+)",
         ]
 
         for pattern in patterns:
@@ -126,19 +131,19 @@ class InstagramImportService(BaseImportService):
 
         # Build API parameters
         params = InstagramEnsembleParams(
-            code=shortcode,
-            token=settings.ensemble_data_api_key
+            code=shortcode, token=settings.ensemble_data_api_key
         )
 
         # Fetch Instagram data from Ensemble API
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                self.ENSEMBLE_API_URL,
-                params=params.model_dump()
+                self.ENSEMBLE_API_URL, params=params.model_dump()
             )
 
         if response.status_code != 200:
-            raise Exception(f"Ensemble API request failed with status {response.status_code}")
+            raise Exception(
+                f"Ensemble API request failed with status {response.status_code}"
+            )
 
         data = response.json()
 
@@ -148,7 +153,9 @@ class InstagramImportService(BaseImportService):
         # Extract description from caption
         description = ""
         if instagram_response.data.edge_media_to_caption.edges:
-            description = instagram_response.data.edge_media_to_caption.edges[0].node.text
+            description = instagram_response.data.edge_media_to_caption.edges[
+                0
+            ].node.text
 
         # Extract video URL
         video_url = instagram_response.data.video_url
@@ -160,7 +167,7 @@ class InstagramImportService(BaseImportService):
             download_url=video_url,
             video_id=shortcode,
             cookies=None,
-            referer='https://www.instagram.com/'
+            referer="https://www.instagram.com/",
         )
 
         return description, video_file
@@ -177,8 +184,8 @@ class InstagramImportService(BaseImportService):
         Raises:
             Exception: If mock data cannot be loaded
         """
-        temp_mock_json = Path('resources/insta/recipe.json')
-        temp_video_file = Path('resources/insta/recipe.mp4')
+        temp_mock_json = Path("resources/insta/recipe.json")
+        temp_video_file = Path("resources/insta/recipe.mp4")
 
         # Load mock Instagram data
         with open(temp_mock_json, "r") as f:
@@ -190,6 +197,8 @@ class InstagramImportService(BaseImportService):
         # Extract description from caption
         description = ""
         if instagram_response.data.edge_media_to_caption.edges:
-            description = instagram_response.data.edge_media_to_caption.edges[0].node.text
+            description = instagram_response.data.edge_media_to_caption.edges[
+                0
+            ].node.text
 
         return description, temp_video_file

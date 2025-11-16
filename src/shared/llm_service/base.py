@@ -19,9 +19,7 @@ class BaseLLMService(ABC):
 
     @abstractmethod
     async def call_llm_api(
-        self,
-        input_prompt: str,
-        json_schema: Optional[dict[str, Any]] = None
+        self, input_prompt: str, json_schema: Optional[dict[str, Any]] = None
     ) -> Optional[str]:
         """Make the API call to the LLM service.
 
