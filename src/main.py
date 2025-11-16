@@ -24,14 +24,20 @@ def create_app() -> FastAPI:
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins.split(','),
+        allow_origins=settings.cors_origins.split(","),
         allow_credentials=settings.cors_credentials,
-        allow_methods=settings.cors_methods.split(','),
-        allow_headers=settings.cors_headers.split(','),
+        allow_methods=settings.cors_methods.split(","),
+        allow_headers=settings.cors_headers.split(","),
     )
 
     # Wire dependency injection container
-    container.wire(modules=[__name__, "src.ai_recipe_engine.api", "src.recipe_import_service.recipe_import_api"])
+    container.wire(
+        modules=[
+            __name__,
+            "src.ai_recipe_engine.api",
+            "src.recipe_import_service.recipe_import_api",
+        ]
+    )
 
     # Include routers
     app.include_router(technique_router)
@@ -53,7 +59,7 @@ async def root():
     return {
         "name": settings.api_title,
         "version": settings.api_version,
-        "status": "running"
+        "status": "running",
     }
 
 

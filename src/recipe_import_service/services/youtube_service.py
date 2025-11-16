@@ -11,7 +11,7 @@ from xml.etree import ElementTree as ET
 from src.shared.llm_service.mistral import MistralService, MistralModels
 from src.recipe_import_service.schemas.youtube_schema import (
     YouTubeEnsembleResponse,
-    YouTubeEnsembleParams
+    YouTubeEnsembleParams,
 )
 from src.recipe_import_service.services.base_import_service import BaseImportService
 from src.core.config import settings
@@ -24,7 +24,9 @@ class YouTubeImportService(BaseImportService):
     """Service for importing recipes from YouTube videos."""
 
     MODEL = MistralModels.small
-    TEMPLATE_PATH = Path(__file__).parent.parent / 'templates' / 'youtube_recipe_template.md'
+    TEMPLATE_PATH = (
+        Path(__file__).parent.parent / "templates" / "youtube_recipe_template.md"
+    )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/youtube/channel/get-short-stats"
 
     def __init__(self, mistral_service: MistralService):
@@ -60,9 +62,13 @@ class YouTubeImportService(BaseImportService):
 
         # Step 2: Fetch metadata and check for captions
         if mock:
-            description, title, transcript_url = await self._fetch_youtube_data_mock(video_id)
+            description, title, transcript_url = await self._fetch_youtube_data_mock(
+                video_id
+            )
         else:
-            description, title, transcript_url = await self._fetch_youtube_data(video_id)
+            description, title, transcript_url = await self._fetch_youtube_data(
+                video_id
+            )
 
         # Step 3 & 4: Create recipe based on available data
         transcript = None
@@ -72,29 +78,29 @@ class YouTubeImportService(BaseImportService):
                 transcript = await self._fetch_transcript(transcript_url)
             except Exception as e:
                 # If transcript fetch fails, fall back to title + description
-                logger.warning(f"Failed to fetch transcript, will use title + description: {e}")
+                logger.warning(
+                    f"Failed to fetch transcript, will use title + description: {e}"
+                )
                 transcript = None
 
         combined_text = f"{title}\n\n{description}"
 
         # Create recipe with available data (transcript and/or description)
         if transcript:
-            
+
             logger.info(f"Text Data: {combined_text}\n\n Transcript: {transcript}")
 
             recipe = await self._create_text_recipe_with_transcript(
-                transcript=transcript,
-                description=combined_text
-            )     
+                transcript=transcript, description=combined_text
+            )
 
         else:
             # No transcript - use title + description
 
             logger.info(f"Text Data: {combined_text}")
-            
+
             recipe = await self._create_text_recipe_with_transcript(
-                transcript=combined_text,
-                description=""
+                transcript=combined_text, description=""
             )
 
         logger.debug(f"Final Recipe: \n {recipe}")
@@ -120,15 +126,15 @@ class YouTubeImportService(BaseImportService):
             ValueError: If URL format is invalid
         """
         # If it's already a video ID (11 characters, alphanumeric + - and _)
-        if re.match(r'^[A-Za-z0-9_-]{11}$', url):
+        if re.match(r"^[A-Za-z0-9_-]{11}$", url):
             return url
 
         # Try various URL patterns
         patterns = [
-            r'(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{11})',
-            r'youtube\.com/embed/([A-Za-z0-9_-]{11})',
-            r'youtube\.com/v/([A-Za-z0-9_-]{11})',
-            r'youtube\.com/shorts/([A-Za-z0-9_-]{11})'
+            r"(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{11})",
+            r"youtube\.com/embed/([A-Za-z0-9_-]{11})",
+            r"youtube\.com/v/([A-Za-z0-9_-]{11})",
+            r"youtube\.com/shorts/([A-Za-z0-9_-]{11})",
         ]
 
         for pattern in patterns:
@@ -138,7 +144,9 @@ class YouTubeImportService(BaseImportService):
 
         raise ValueError(f"Invalid YouTube URL or video ID: {url}")
 
-    async def _fetch_youtube_data(self, video_id: str) -> tuple[str, str, Optional[str]]:
+    async def _fetch_youtube_data(
+        self, video_id: str
+    ) -> tuple[str, str, Optional[str]]:
         """Fetch YouTube video metadata and transcript URL from Ensemble API.
 
         Args:
@@ -152,20 +160,19 @@ class YouTubeImportService(BaseImportService):
         """
         # Build API parameters
         params = YouTubeEnsembleParams(
-            id=video_id,
-            token=settings.ensemble_data_api_key,
-            alternative_method=True
+            id=video_id, token=settings.ensemble_data_api_key, alternative_method=True
         )
 
         # Fetch data from Ensemble API
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
-                self.ENSEMBLE_API_URL,
-                params=params.model_dump()
+                self.ENSEMBLE_API_URL, params=params.model_dump()
             )
 
         if response.status_code != 200:
-            raise Exception(f"Ensemble API request failed with status {response.status_code}")
+            raise Exception(
+                f"Ensemble API request failed with status {response.status_code}"
+            )
 
         data = response.json()
 
@@ -181,13 +188,17 @@ class YouTubeImportService(BaseImportService):
         # Check if captions are available
         transcript_url = None
         if youtube_response.data.captions:
-            caption_tracks = youtube_response.data.captions.playerCaptionsTracklistRenderer.captionTracks
+            caption_tracks = (
+                youtube_response.data.captions.playerCaptionsTracklistRenderer.captionTracks
+            )
             if caption_tracks:
                 transcript_url = caption_tracks[0].baseUrl
 
         return description, title, transcript_url
 
-    async def _fetch_youtube_data_mock(self, video_id: str) -> tuple[str, str, Optional[str]]:
+    async def _fetch_youtube_data_mock(
+        self, video_id: str
+    ) -> tuple[str, str, Optional[str]]:
         """Fetch YouTube video metadata and transcript URL (using mock data).
 
         Args:
@@ -199,7 +210,7 @@ class YouTubeImportService(BaseImportService):
         Raises:
             Exception: If mock data cannot be loaded
         """
-        temp_mock_json = Path('resources/youtube/recipe_short.json')
+        temp_mock_json = Path("resources/youtube/recipe_short.json")
 
         # Load mock YouTube data
         with open(temp_mock_json, "r") as f:
@@ -218,12 +229,13 @@ class YouTubeImportService(BaseImportService):
         # Check if captions are available
         transcript_url = None
         if youtube_response.data.captions:
-            caption_tracks = youtube_response.data.captions.playerCaptionsTracklistRenderer.captionTracks
+            caption_tracks = (
+                youtube_response.data.captions.playerCaptionsTracklistRenderer.captionTracks
+            )
             if caption_tracks:
                 transcript_url = caption_tracks[0].baseUrl
 
         return description, title, transcript_url
-
 
     async def _fetch_transcript(self, transcript_url: str) -> str:
         """Fetch and parse YouTube transcript XML.
@@ -239,11 +251,13 @@ class YouTubeImportService(BaseImportService):
         """
         try:
             # Fetch the XML transcript
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(transcript_url)
 
             if response.status_code != 200:
-                raise Exception(f"Failed to fetch transcript with status {response.status_code}")
+                raise Exception(
+                    f"Failed to fetch transcript with status {response.status_code}"
+                )
 
             xml_content = response.text
 
@@ -252,23 +266,22 @@ class YouTubeImportService(BaseImportService):
             texts = []
 
             # Extract all text elements from the XML
-            for text_elem in root.findall('.//text'):
+            for text_elem in root.findall(".//text"):
                 if text_elem.text:
                     texts.append(text_elem.text)
 
-            transcript = ' '.join(texts)
+            transcript = " ".join(texts)
 
             # Clean up common HTML entities
-            transcript = transcript.replace('&quot;', '"')
-            transcript = transcript.replace('&amp;', '&')
-            transcript = transcript.replace('&#39;', "'")
-            transcript = transcript.replace('&lt;', '<')
-            transcript = transcript.replace('&gt;', '>')
+            transcript = transcript.replace("&quot;", '"')
+            transcript = transcript.replace("&amp;", "&")
+            transcript = transcript.replace("&#39;", "'")
+            transcript = transcript.replace("&lt;", "<")
+            transcript = transcript.replace("&gt;", ">")
 
             logger.debug(f"Transcript extracted: {len(transcript)} characters")
 
             return transcript
 
         except Exception as e:
-            logger.error(f"Failed to fetch or parse transcript link {transcript_url}: {e}")
             raise Exception(f"Transcript extraction failed: {str(e)}")

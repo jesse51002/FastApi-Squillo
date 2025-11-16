@@ -46,9 +46,7 @@ class BaseImportService:
         raise NotImplementedError("Subclasses must implement url_to_text_recipe")
 
     async def _create_text_recipe_with_audio(
-        self,
-        audio_file: Path,
-        description: str
+        self, audio_file: Path, description: str
     ) -> Optional[str]:
         """Create recipe from audio and description using Voxtral (shared method).
 
@@ -68,9 +66,7 @@ class BaseImportService:
 
         # Format the template with description and schema
         prompt = TemplateFormatter.format_template(
-            self.TEMPLATE_PATH,
-            description=description,
-            schema=str_json_schema
+            self.TEMPLATE_PATH, description=description, schema=str_json_schema
         )
 
         # Call Voxtral API with audio and prompt
@@ -78,7 +74,7 @@ class BaseImportService:
             audio_file_path=audio_file,
             text_prompt=prompt,
             model=self.MODEL,
-            json_schema=json_schema
+            json_schema=json_schema,
         )
 
         if not response:
@@ -90,16 +86,12 @@ class BaseImportService:
             return llm_output.recipe
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
         except Exception as e:
-            logger.error(f"Failed to validate LLM response: {e}")
             raise Exception(f"LLM response validation failed: {str(e)}")
 
     async def _create_text_recipe_with_transcript(
-        self,
-        transcript: str = "",
-        description: str = ""
+        self, transcript: str = "", description: str = ""
     ) -> Optional[str]:
         """Create recipe from transcript and/or description using Mistral (shared method).
 
@@ -116,7 +108,9 @@ class BaseImportService:
         """
         # Ensure at least one of transcript or description is provided
         if transcript == "" and description == "":
-            raise ValueError("At least one of transcript or description must be provided")
+            raise ValueError(
+                "At least one of transcript or description must be provided"
+            )
 
         # Get JSON schema from LlmOutputFormat
         json_schema = LlmOutputFormat.model_json_schema()
@@ -127,14 +121,12 @@ class BaseImportService:
             self.TEMPLATE_PATH,
             transcript=transcript or "",
             description=description or "",
-            schema=str_json_schema
+            schema=str_json_schema,
         )
 
         # Call Mistral API with text prompt
         response = await self.mistral_service.call_llm_api(
-            input_prompt=prompt,
-            model=self.MODEL,
-            json_schema=json_schema
+            input_prompt=prompt, model=self.MODEL, json_schema=json_schema
         )
 
         if not response:
@@ -146,8 +138,6 @@ class BaseImportService:
             return llm_output.recipe
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response as JSON: {e}")
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
         except Exception as e:
-            logger.error(f"Failed to validate LLM response: {e}")
             raise Exception(f"LLM response validation failed: {str(e)}")

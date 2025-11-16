@@ -27,7 +27,9 @@ class WebRecipeService(BaseImportService):
     """
 
     MODEL = MistralModels.small
-    TEMPLATE_PATH = Path(__file__).parent.parent / 'templates' / 'web_recipe_template.md'
+    TEMPLATE_PATH = (
+        Path(__file__).parent.parent / "templates" / "web_recipe_template.md"
+    )
 
     def __init__(self, mistral_service: MistralService):
         """Initialize web recipe import service.
@@ -56,21 +58,16 @@ class WebRecipeService(BaseImportService):
         """
 
         # Fetch the HTML content
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(    
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
+            response = await client.get(
                 url,
                 headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Referer': 'https://www.google.com/'
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.5",
+                    "Referer": "https://www.google.com/",
                 },
-                timeout=30.0
             )
-            
-            if response.status_code == 403:
-                logger.error(f"Request to scrape {url} was forbbidden")
-            
             response.raise_for_status()
             html_content = response.text
 
@@ -80,7 +77,9 @@ class WebRecipeService(BaseImportService):
         if recipe_data:
             # Format structured data as markdown
             recipe = self._format_recipe_markdown(recipe_data)
-            logger.info(f"Successfully extracted recipe using structured data: {recipe_data.title}")
+            logger.info(
+                f"Successfully extracted recipe using structured data: {recipe_data.title}"
+            )
             return recipe
         else:
             # Step 2: Fall back to LLM extraction
@@ -88,7 +87,9 @@ class WebRecipeService(BaseImportService):
             recipe = await self._extract_recipe_with_llm(html_content)
             return recipe
 
-    async def _scrape_recipe_structured_data(self, url: str, html_content: str) -> Optional[WebRecipeData]:
+    async def _scrape_recipe_structured_data(
+        self, url: str, html_content: str
+    ) -> Optional[WebRecipeData]:
         """Extract structured recipe data from a recipe website URL.
 
         Uses the recipe-scrapers library to extract schema.org structured data
@@ -101,7 +102,6 @@ class WebRecipeService(BaseImportService):
             WebRecipeData model with extracted recipe information, or None if extraction fails
         """
         try:
-           
 
             # Use recipe-scrapers to extract structured data
             scraper = scrape_html(html=html_content, org_url=url)
@@ -152,7 +152,7 @@ class WebRecipeService(BaseImportService):
                 cook_time=cook_time,
                 yields=yields_value,
                 image=image,
-                description=description
+                description=description,
             )
 
             logger.info(f"Successfully extracted recipe: {title}")
@@ -218,25 +218,21 @@ class WebRecipeService(BaseImportService):
         """
         try:
             clean_content = self._extract_readable_text(html_content)
-            
+
             logger.debug(clean_content)
-            
+
             # Get JSON schema from LlmOutputFormat
             json_schema = LlmOutputFormat.model_json_schema()
             str_json_schema = json.dumps(json_schema, indent=2)
 
             # Format the template with HTML and schema
             prompt = TemplateFormatter.format_template(
-                self.TEMPLATE_PATH,
-                html=clean_content,
-                schema=str_json_schema
+                self.TEMPLATE_PATH, html=clean_content, schema=str_json_schema
             )
 
             # Call Mistral API with text prompt
             response_text = await self.mistral_service.call_llm_api(
-                input_prompt=prompt,
-                model=self.MODEL,
-                json_schema=json_schema
+                input_prompt=prompt, model=self.MODEL, json_schema=json_schema
             )
 
             if not response_text:
@@ -249,42 +245,41 @@ class WebRecipeService(BaseImportService):
                 return llm_output.recipe
 
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM response as JSON: {e}")
                 raise Exception(f"Invalid JSON response from LLM: {str(e)}")
             except Exception as e:
-                logger.error(f"Failed to validate LLM response: {e}")
                 raise Exception(f"LLM response validation failed: {str(e)}")
 
         except Exception as e:
-            logger.error(f"Failed to extract recipe with LLM from: {str(e)}")
-            raise e
-    
+            raise Exception(f"LLM call failed to parse web recipe: {str(e)}")
+
     def _extract_readable_text(self, html_content: str) -> str:
         """
         Parses HTML content, removes scripts, styles, and other non-content
         elements, and returns the cleaned text.
         """
-        soup = BeautifulSoup(html_content, 'lxml')
+        soup = BeautifulSoup(html_content, "lxml")
 
         # 1. Remove non-content elements and their contents
         # This is the most crucial step for cleaning
-        for element in soup([
-            'script',    # JavaScript code
-            'style',     # CSS styles
-            'noscript',  # Fallback content for disabled JS
-            'header',    # Common site header/navigation
-            'footer',    # Common site footer/links
-            'nav',       # Navigation links
-            'form',      # Input forms
-            'button',    # Buttons
-            'svg',       # Scalable Vector Graphics
-            'img',       # Images (keeping alt text often better)
-            'a',         # Links (might strip link text if not careful)
-            'iframe',    # Embedded content
-            'meta',      # Metadata
-            'link',      # External resources
-        ]):
-            element.decompose() # .decompose() removes the tag and its contents
+        for element in soup(
+            [
+                "script",  # JavaScript code
+                "style",  # CSS styles
+                "noscript",  # Fallback content for disabled JS
+                "header",  # Common site header/navigation
+                "footer",  # Common site footer/links
+                "nav",  # Navigation links
+                "form",  # Input forms
+                "button",  # Buttons
+                "svg",  # Scalable Vector Graphics
+                "img",  # Images (keeping alt text often better)
+                "a",  # Links (might strip link text if not careful)
+                "iframe",  # Embedded content
+                "meta",  # Metadata
+                "link",  # External resources
+            ]
+        ):
+            element.decompose()  # .decompose() removes the tag and its contents
 
         # 2. Remove HTML comments
         for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
@@ -292,11 +287,13 @@ class WebRecipeService(BaseImportService):
 
         # 3. Extract all remaining text
         # .get_text() automatically joins text from various tags
-        text = soup.get_text(separator='\n', strip=True)
-        
+        text = soup.get_text(separator="\n", strip=True)
+
         # 4. Clean up excessive whitespace (important if separator is a single space)
         # The 'strip=True' above usually handles leading/trailing whitespace well.
         # This step ensures multiple newlines are handled nicely.
-        cleaned_text = '\n'.join(line.strip() for line in text.splitlines() if line.strip())
+        cleaned_text = "\n".join(
+            line.strip() for line in text.splitlines() if line.strip()
+        )
 
         return cleaned_text
