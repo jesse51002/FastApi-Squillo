@@ -18,6 +18,7 @@ dependencies = [
     "pyyaml (>=6.0.3,<7.0.0)",
     "requests (>=2.32.5,<3.0.0)",
     "google-genai (>=1.49.0,<2.0.0)",
+    "recipe-scrapers (>=15.10.0,<16.0.0)",
 ]
 packages = [
     { include = "src" }

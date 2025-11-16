@@ -1,22 +1,26 @@
 """Pydantic schemas for LLM API requests and responses (Mistral and Claude)."""
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Literal, Union, Optional
 
 
-class MessageContent(BaseModel):
+class MistralVoiceMessageContent(BaseModel):
+    """Content item in a message (supports text)."""
+    type: Literal['input_audio'] = Field('input_audio')
+    input_audio: str  = Field(..., description="Base64 encoded audio for Voxtral")
+
+class MistralTextMessageContent(BaseModel):
     """Content item in a message (supports text and audio for Voxtral)."""
-    type: str = 'text'
-    text: Optional[str] = None
-    input_audio: Optional[str] = None  # Base64 encoded audio for Voxtral
+    type: Literal['text']  = Field('text')
+    text: str = Field(..., description="Input text")
 
 
 class Message(BaseModel):
     """Chat message structure."""
     role: str
-    content: list[MessageContent]
+    content: list[Union[MistralVoiceMessageContent, MistralTextMessageContent]]
 
-
+ 
 class ResponseFormat(BaseModel):
     """Response format configuration."""
     type: str = 'json_object'
