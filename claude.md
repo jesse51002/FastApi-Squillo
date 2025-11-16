@@ -122,6 +122,18 @@ src/
 - Include meaningful error messages
 - Customize validation error responses
 
+**Logging and Exception Strategy**
+- **API/Router layer**: Use `logger.error()` with `exc_info=True` to log full stack traces
+  - Good: `logger.error("Recipe import failed", exc_info=True)`
+  - Always import logging and create logger: `logger = logging.getLogger(__name__)`
+  - Log before raising HTTPException to capture full context
+- **Service/Repository/Util layers**: Just raise exceptions with relevant error messages
+  - Good: `raise ValueError("Invalid recipe URL format")`
+  - Good: `raise HTTPException(status_code=404, detail="Recipe not found")`
+  - Bad: Don't log in service/util layers - let API layer handle logging
+  - Focus on clear, descriptive exception messages that help debugging
+- **Layer Separation**: API logs + handles, Services raise + describe
+
 **Middleware**
 - CORS must be first in middleware stack
 - One purpose per middleware

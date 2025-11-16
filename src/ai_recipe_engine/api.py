@@ -1,5 +1,7 @@
 """API router for technique extraction endpoints."""
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from dependency_injector.wiring import inject, Provide
 
@@ -7,6 +9,7 @@ from src.core.dependencies import DependencyManager
 from .schema import TechniqueExtractionRequest, TechniqueExtractionResponse
 from .service import TechniqueExtractionService
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/v1",
@@ -54,6 +57,7 @@ async def extract_techniques(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
+        logger.error("Technique extraction failed", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Technique extraction failed",
