@@ -96,7 +96,6 @@ class DatabaseService:
             # Store the full recipe
             self._recipes[recipe.recipe_id] = recipe
 
-            # Calculate the maximum difficulty from all techniques in the recipe
             technique_ids = set()
             for step in recipe.steps:
                 for technique in step.techniques:
@@ -108,7 +107,7 @@ class DatabaseService:
                 recipe_name=recipe.recipe_name,
                 thumbnail_url=recipe.thumbnail_url,
                 difficulty=recipe.difficulty,
-                technique_ids=list(technique_ids),  # Remove duplicates
+                technique_ids=list(technique_ids),
             )
 
             # Add recipe display data to user's list if not already present

@@ -104,7 +104,7 @@ async def import_recipe(
             return ImportResponse(recipe="", no_recipe_found=True)
 
         # Save recipe to database if user_id is provided
-        if request.user_id and recipe:
+        if request.user_id:
             try:
                 # Extract techniques from the recipe text
                 extraction_result = await technique_service.extract_techniques(recipe)

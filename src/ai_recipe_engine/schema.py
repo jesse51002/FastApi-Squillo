@@ -70,6 +70,10 @@ class ExtractionRecipeStep(BaseModel):
         ...,
         description="The estimated amount of time the step will take in minutes (decimals allowed)",
     )
+    is_active_step: bool = Field(
+        ...,
+        description="Whether it is an active step (doing) or a passive step (waiting)",
+    )
 
 
 class TechniqueExtractionResponse(BaseModel):
@@ -84,3 +88,4 @@ class TechniqueExtractionResponse(BaseModel):
     )
     status: str = Field(default="success", description="Status of the extraction")
     difficulty: RecipeDifficulty = Field(..., description="Difficulty of recipe (1-3)")
+    servings: int = Field(..., description="How many services this recipe has")

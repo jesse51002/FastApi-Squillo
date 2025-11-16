@@ -27,6 +27,10 @@ class User(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.now, description="Timestamp when the user was created"
     )
+    techniques_watched: list[str] = Field(
+        default_factory=list,
+        description="List of technique videos already watched",
+    )
 
 
 class UserResponse(BaseModel):
