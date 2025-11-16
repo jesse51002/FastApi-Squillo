@@ -8,7 +8,8 @@ import logging
 from src.core.config import settings
 from .base import BaseLLMService
 from .schemas import (
-    MessageContent,
+    MistralTextMessageContent,
+    MistralVoiceMessageContent,
     Message,
     ResponseFormat,
     MistralRequest,
@@ -66,8 +67,6 @@ class MistralService(BaseLLMService):
             Exception: If the API call fails or times out
         """
 
-        logger.debug(f"Input promt:\n\n {input_prompt}")
-
         # Build request using Pydantic models
         # Mistral always uses json_object format, json_schema parameter not used
         request = MistralRequest(
@@ -80,8 +79,7 @@ class MistralService(BaseLLMService):
                 Message(
                     role='user',
                     content=[
-                        MessageContent(
-                            type='text',
+                        MistralTextMessageContent(
                             text=input_prompt
                         )
                     ]
@@ -110,8 +108,8 @@ class MistralService(BaseLLMService):
                         return output
                     return None
                 else:
-                    print(f"LLM API Error: {response.status_code} - {response.text}")
-                    raise Exception(f"LLM call failed with status {response.status_code}: {response.text}")
+                    # print(f"LLM API Error: {response.status_code} - {response.text}")
+                    raise Exception(f"LLM call failed with status {response.status_code}")
 
             except httpx.TimeoutException:
                 raise Exception("LLM API request timed out")
@@ -141,9 +139,6 @@ class MistralService(BaseLLMService):
         Raises:
             Exception: If the API call fails, times out, or audio file not found
         """
-        logger.debug(f"Processing audio file: {audio_file_path}")
-        logger.debug(f"Input prompt:\n\n {text_prompt}")
-
         # Validate audio file exists
         if not audio_file_path.exists():
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
@@ -164,12 +159,10 @@ class MistralService(BaseLLMService):
                 Message(
                     role='user',
                     content=[
-                        MessageContent(
-                            type='input_audio',
+                        MistralVoiceMessageContent(
                             input_audio=audio_base64
                         ),
-                        MessageContent(
-                            type='text',
+                        MistralTextMessageContent(
                             text=text_prompt
                         )
                     ]
@@ -198,8 +191,8 @@ class MistralService(BaseLLMService):
                         return output
                     return None
                 else:
-                    logger.error(f"Voxtral API Error: {response.status_code} - {response.text}")
-                    raise Exception(f"Voxtral call failed with status {response.status_code}: {response.text}")
+                    logger.error(f"Voxtral API Error: {response.status_code}")
+                    raise Exception(f"Voxtral call failed with status {response.status_code}")
 
             except httpx.TimeoutException:
                 raise Exception("Voxtral API request timed out")

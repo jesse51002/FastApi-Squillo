@@ -1,20 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
-
-
-class TikTokImportRequest(BaseModel):
-    """Request model for TikTok recipe import."""
-    url: str = Field(..., description="TikTok video URL")
-
-
-class TikTokImportResponse(BaseModel):
-    """Response model for TikTok recipe import."""
-    recipe: str = Field(..., description="Extracted recipe in markdown format")
-    no_recipe_found: bool = Field(..., description="Whether or not a recipe was found in the tiktok")
-
-
-class LlmOutputFormat(BaseModel):
-    recipe: Optional[str] = Field(None, description="Recipe in markdown format, or null if no recipe content found")
+from typing import List
 
 
 class EnsembleApiParams(BaseModel):

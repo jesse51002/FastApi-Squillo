@@ -6,7 +6,11 @@ from dependency_injector.wiring import inject, Provide
 
 from src.core.dependencies import DependencyManager
 from src.recipe_import_service.services.tiktok_service import TiktokImportService
-from src.recipe_import_service.schemas.tiktok_schema import TikTokImportRequest, TikTokImportResponse
+from src.recipe_import_service.services.youtube_service import YouTubeImportService
+from src.recipe_import_service.services.instagram_service import InstagramImportService
+from src.recipe_import_service.services.web_recipe_service import WebRecipeService
+from src.recipe_import_service.services.media_utils import detect_platform, Platform
+from src.recipe_import_service.schemas.import_schema import ImportRequest, ImportResponse
 
 
 router = APIRouter(
@@ -15,25 +19,34 @@ router = APIRouter(
 
 
 @router.post(
-    "/tiktok",
-    response_model=TikTokImportResponse,
+    "",
+    response_model=ImportResponse,
     status_code=status.HTTP_200_OK,
-    summary="Import recipe from TikTok video",
-    description="Extracts recipe from TikTok video by analyzing audio narration and video description"
+    summary="Import recipe from any supported platform",
+    description="Automatically detects platform (TikTok, YouTube, Instagram, or recipe website) and extracts recipe"
 )
 @inject
-async def import_tiktok_recipe(
-    request: TikTokImportRequest,
-    service: TiktokImportService = Depends(Provide[DependencyManager.tiktok_import_service])
-) -> TikTokImportResponse:
-    """Import recipe from TikTok video.
+async def import_recipe(
+    request: ImportRequest,
+    tiktok_service: TiktokImportService = Depends(Provide[DependencyManager.tiktok_import_service]),
+    youtube_service: YouTubeImportService = Depends(Provide[DependencyManager.youtube_import_service]),
+    instagram_service: InstagramImportService = Depends(Provide[DependencyManager.instagram_import_service]),
+    web_service: WebRecipeService = Depends(Provide[DependencyManager.web_recipe_service])
+) -> ImportResponse:
+    """Import recipe from any supported platform.
+
+    Automatically detects the platform from the URL and routes to the appropriate service.
+    Supported platforms: TikTok, YouTube (including Shorts), Instagram (Reels), and recipe websites.
 
     Args:
-        request: The request containing TikTok video URL
-        service: Injected TikTok import service
+        request: The request containing URL, optional user_id, and mock flag
+        tiktok_service: Injected TikTok import service
+        youtube_service: Injected YouTube import service
+        instagram_service: Injected Instagram import service
+        web_service: Injected web recipe import service
 
     Returns:
-        TikTokImportResponse: Extracted recipe in markdown format
+        ImportResponse: Extracted recipe in markdown format
 
     Raises:
         HTTPException: If import fails or no recipe found
@@ -43,16 +56,32 @@ async def import_tiktok_recipe(
         if not request.url.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="TikTok URL cannot be empty"
+                detail="URL cannot be empty"
             )
 
-        # Call service layer
-        recipe = await service.url_to_text_recipe(request.url)
+        # Detect platform
+        platform = detect_platform(request.url)
+
+        # Route to appropriate service
+        match platform:
+            case Platform.TIKTOK:
+                recipe = await tiktok_service.url_to_text_recipe(request.url, mock=request.mock)
+            case Platform.YOUTUBE:
+                recipe = await youtube_service.url_to_text_recipe(request.url, mock=request.mock)
+            case Platform.INSTAGRAM:
+                recipe = await instagram_service.url_to_text_recipe(request.url, mock=request.mock)
+            case Platform.WEB:
+                recipe = await web_service.url_to_text_recipe(request.url)
+
+        # TODO: Save recipe to database if user_id is provided
+        if request.user_id and recipe:
+            # Implement database save logic here
+            pass
 
         if recipe is not None:
-            return TikTokImportResponse(recipe=recipe, no_recipe_found=False)
+            return ImportResponse(recipe=recipe, no_recipe_found=False)
         else:
-            return TikTokImportResponse(recipe="", no_recipe_found=True)
+            return ImportResponse(recipe="", no_recipe_found=True)
 
     except ValueError as e:
         raise HTTPException(
@@ -60,8 +89,7 @@ async def import_tiktok_recipe(
             detail=str(e)
         )
     except Exception as e:
-        raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"TikTok recipe import failed: {str(e)}"
+            detail=f"Recipe import failed: {str(e)}"
         )
