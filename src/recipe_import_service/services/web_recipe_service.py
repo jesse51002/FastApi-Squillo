@@ -58,7 +58,7 @@ class WebRecipeService(BaseImportService):
         """
 
         # Fetch the HTML content
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
             response = await client.get(
                 url,
                 headers={
@@ -67,7 +67,6 @@ class WebRecipeService(BaseImportService):
                     "Accept-Language": "en-US,en;q=0.5",
                     "Referer": "https://www.google.com/",
                 },
-                timeout=30.0,
             )
             response.raise_for_status()
             html_content = response.text

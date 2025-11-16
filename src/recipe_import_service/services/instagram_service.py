@@ -135,7 +135,7 @@ class InstagramImportService(BaseImportService):
         )
 
         # Fetch Instagram data from Ensemble API
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
                 self.ENSEMBLE_API_URL, params=params.model_dump()
             )

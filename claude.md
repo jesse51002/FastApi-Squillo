@@ -48,6 +48,13 @@
 - Never use blocking operations (`time.sleep`, sync `requests`)
 - Always close connections with async context managers
 
+**HTTP Requests**
+- **ALWAYS add timeout to HTTP requests (default to 30 seconds)**
+- Good: `httpx.get(url, timeout=30.0)`
+- Good: `async with httpx.AsyncClient(timeout=30.0) as client:`
+- Bad: `httpx.get(url)` (no timeout - can hang indefinitely)
+- Use custom timeouts for specific endpoints if needed (e.g., `timeout=60.0` for slow APIs)
+
 **Dependency Management**
 - **ALWAYS use `poetry add <package>` to add dependencies**
 - **NEVER manually modify pyproject.toml or poetry.lock**

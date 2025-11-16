@@ -164,7 +164,7 @@ class YouTubeImportService(BaseImportService):
         )
 
         # Fetch data from Ensemble API
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
                 self.ENSEMBLE_API_URL, params=params.model_dump()
             )
@@ -251,7 +251,7 @@ class YouTubeImportService(BaseImportService):
         """
         try:
             # Fetch the XML transcript
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(transcript_url)
 
             if response.status_code != 200:

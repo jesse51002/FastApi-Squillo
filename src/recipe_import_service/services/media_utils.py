@@ -157,7 +157,7 @@ async def download_video(
     try:
         logger.debug(f"Downloading video {video_id}")
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             async with client.stream(
                 "GET", download_url, cookies=cookies, headers=headers
             ) as response:
