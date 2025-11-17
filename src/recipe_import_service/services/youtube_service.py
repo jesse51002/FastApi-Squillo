@@ -37,7 +37,7 @@ class YouTubeImportService(BaseImportService):
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(
+    async def _url_to_text_recipe(
         self, url: str, mock: bool = False
     ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a YouTube video URL.

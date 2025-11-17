@@ -183,7 +183,7 @@ class TechniqueExtractionService:
                 f"Could not match the following technique(s) to valid techniques:\n{error_details}"
             )
 
-        return True
+        return response
 
     def _add_difficulty(
         self, response: TechniqueExtractionResponse
@@ -243,6 +243,30 @@ class TechniqueExtractionService:
 
         return response
 
+    def _calculate_recipe_times(
+        self, response: TechniqueExtractionResponse
+    ) -> TechniqueExtractionResponse:
+        """Calculate active and total time for a recipe.
+
+        Args:
+            response: The technique extraction response
+
+        Returns:
+            TechniqueExtractionResponse: The response with calculated time fields
+        """
+        active_time = 0.0
+        total_time = 0.0
+
+        for step in response.steps:
+            total_time += step.estimated_time
+            if step.is_active_step:
+                active_time += step.estimated_time
+
+        response.active_time = active_time
+        response.total_time = total_time
+
+        return response
+
     async def extract_techniques(self, recipe_text: str) -> TechniqueExtractionResponse:
         """Extract cooking techniques from recipe text.
 
@@ -282,10 +306,11 @@ class TechniqueExtractionService:
             raise Exception(f"Failed to construct response from LLM data: {str(e)}")
 
         # Validate technique IDs
-        self._validate(response)
+        response = self._validate(response)
 
         response = self._add_difficulty(response)
         response = self._sort_techniques(response)
+        response = self._calculate_recipe_times(response)
 
         # Debug log the response in YAML format
         logger.debug(

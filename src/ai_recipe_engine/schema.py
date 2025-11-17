@@ -88,3 +88,9 @@ class TechniqueExtractionResponse(BaseModel):
     )
     difficulty: RecipeDifficulty = Field(..., description="Difficulty of recipe (1-3)")
     servings: int = Field(..., description="How many servings this recipe has")
+    active_time: float = Field(
+        default=0.0, description="Total active time for the recipe in minutes"
+    )
+    total_time: float = Field(
+        default=0.0, description="Total time for the recipe in minutes"
+    )

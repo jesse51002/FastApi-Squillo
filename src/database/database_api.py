@@ -110,45 +110,6 @@ async def get_user(
         )
 
 
-@router.post(
-    "/users/{user_id}/recipes",
-    response_model=RecipeDisplayData,
-    status_code=status.HTTP_201_CREATED,
-    summary="Add recipe to user",
-    description="Adds a recipe to a user's collection",
-)
-@inject
-async def add_recipe_to_user(
-    user_id: str,
-    recipe: StoredRecipe,
-    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
-) -> RecipeDisplayData:
-    """Add a recipe to a user's collection.
-
-    Args:
-        user_id: The ID of the user
-        recipe: The recipe to add
-        db_service: Injected database service
-
-    Returns:
-        The stored recipe
-
-    Raises:
-        HTTPException: If user not found or operation fails
-    """
-    try:
-        stored_recipe = await db_service.add_recipe_to_user(user_id, recipe)
-        return stored_recipe
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception:
-        logger.error("Failed to add recipe to user", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to add recipe",
-        )
-
-
 @router.get(
     "/users/{user_id}/recipes",
     response_model=list[RecipeDisplayData],

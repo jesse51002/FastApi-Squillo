@@ -25,15 +25,17 @@ class DatabaseService:
         _lock: Async lock for thread-safe operations
     """
 
-    _users: dict[str, User] = None
-    _recipes: dict[str, StoredRecipe] = None
+    _users: dict[str, User] = {}
+    _recipes: dict[str, StoredRecipe] = {}
+    _lock: Optional[asyncio.Lock] = None
 
     def __init__(self) -> None:
         """Initialize the database service.
 
         Note: Storage is class-level, so all instances share the same data.
         """
-        self._lock: asyncio.Lock = asyncio.Lock()
+        if self._lock is None:
+            self.__class__._lock = asyncio.Lock()
         self._load_mock_data()
 
     def _load_mock_data(self) -> None:
@@ -43,7 +45,7 @@ class DatabaseService:
         directory. Only loads data if the file exists and databases are empty.
         """
         if not MOCK_DATA_PATH.exists():
-            logger.info("No mock data file found, starting with empty database")
+            logger.error("No mock data file found, starting with empty database")
             return
 
         if self._users or self._recipes:
@@ -149,8 +151,6 @@ class DatabaseService:
             if not recipe.recipe_id:
                 raise ValueError("Recipe must have a recipe_id")
 
-            self._calculate_recipe_times(recipe)
-
             # Store the full recipe
             self._recipes[recipe.recipe_id] = recipe
 
@@ -162,26 +162,6 @@ class DatabaseService:
             user.recipes.append(recipe_display)
 
             return recipe_display
-
-    def _calculate_recipe_times(self, recipe: StoredRecipe) -> None:
-        """Calculate active and total time for a recipe.
-
-        Args:
-            recipe: The recipe to calculate times for
-
-        Returns:
-            Tuple of (active_time, total_time) in minutes
-        """
-        active_time = 0.0
-        total_time = 0.0
-
-        for step in recipe.steps:
-            total_time += step.estimated_time
-            if step.is_active_step:
-                active_time += step.estimated_time
-
-        recipe.active_time = active_time
-        recipe.total_time = total_time
 
     def create_recipe_display(self, recipe: StoredRecipe) -> RecipeDisplayData:
         """Create RecipeDisplayData from a StoredRecipe.

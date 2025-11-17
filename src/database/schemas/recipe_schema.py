@@ -30,12 +30,6 @@ class StoredRecipe(TechniqueExtractionResponse):
         default=None, description="URL to the recipe thumbnail image"
     )
     created_at: datetime = Field(
-        default_factory=datetime.now,
-        description="Timestamp when the recipe was saved",
-    )
-    active_time: float = Field(..., description="Active time in a recipe")
-    total_time: float = Field(..., description="Total time in a recipe")
-    creation_time: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Recipe creation time",
     )

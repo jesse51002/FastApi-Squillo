@@ -39,7 +39,9 @@ class WebRecipeService(BaseImportService):
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str) -> tuple[Optional[str], Optional[str]]:
+    async def _url_to_text_recipe(
+        self, url: str
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a recipe website URL.
 
         This orchestrates the full pipeline:

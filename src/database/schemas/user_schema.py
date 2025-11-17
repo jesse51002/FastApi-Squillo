@@ -31,14 +31,11 @@ class User(BaseModel):
         default_factory=list,
         description="List of recipe display data owned by this user",
     )
-    created_at: datetime = Field(
-        default_factory=datetime.now, description="Timestamp when the user was created"
-    )
     techniques_watched: list[str] = Field(
         default_factory=list,
         description="List of technique videos already watched",
     )
-    creation_time: datetime = Field(
+    created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Recipe creation time",
     )
