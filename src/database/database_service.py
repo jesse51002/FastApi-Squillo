@@ -4,7 +4,6 @@ import asyncio
 import logging
 import yaml
 from typing import Optional
-from datetime import datetime
 
 from src.core.constants import MOCK_DATA_PATH
 from src.database.schemas.user_schema import User, UserCreate
@@ -123,7 +122,6 @@ class DatabaseService:
                 username=user_create.username,
                 email=user_create.email,
                 recipes=[],
-                created_at=datetime.now(),
             )
             self._users[user_create.user_id] = user
             return user
