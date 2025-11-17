@@ -40,7 +40,7 @@ class WebRecipeService(BaseImportService):
         self.mistral_service = mistral_service
 
     async def _url_to_text_recipe(
-        self, url: str
+        self, url: str, mock: bool
     ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a recipe website URL.
 
@@ -51,6 +51,7 @@ class WebRecipeService(BaseImportService):
 
         Args:
             url: Recipe website URL
+            mock: If to mock ensemble request (unused)
 
         Returns:
             Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
