@@ -111,11 +111,17 @@ class TechniqueExtractionService:
         else:
             # ID is valid, but ensure name matches official name
             techniques_dict = self.technique_service.get_all_techniques()
-            technique_info.name = techniques_dict[technique_info.id].name
+            if technique_info.name != techniques_dict[technique_info.id].name:
+                logger.debug(
+                    f"Corrected name for {technique_info.id}: '{technique_info.name}' -> '{techniques_dict[technique_info.id].name}'"
+                )
+                technique_info.name = techniques_dict[technique_info.id].name
 
             return None
 
-    def _validate(self, response: TechniqueExtractionResponse) -> bool:
+    def _validate(
+        self, response: TechniqueExtractionResponse
+    ) -> TechniqueExtractionResponse:
         """Validate and correct technique IDs in the response using fuzzy matching.
 
         This method validates that all technique IDs in the response are valid.

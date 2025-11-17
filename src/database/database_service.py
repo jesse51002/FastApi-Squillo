@@ -45,7 +45,7 @@ class DatabaseService:
         directory. Only loads data if the file exists and databases are empty.
         """
         if not MOCK_DATA_PATH.exists():
-            logger.error("No mock data file found, starting with empty database")
+            logger.warning("No mock data file found, starting with empty database")
             return
 
         if self._users or self._recipes:
@@ -150,6 +150,9 @@ class DatabaseService:
 
             if not recipe.recipe_id:
                 raise ValueError("Recipe must have a recipe_id")
+
+            if recipe.recipe_id in self._recipes:
+                raise ValueError(f"Recipe with id {recipe.recipe_id} already exists")
 
             # Store the full recipe
             self._recipes[recipe.recipe_id] = recipe
