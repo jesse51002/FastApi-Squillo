@@ -2,7 +2,6 @@
 
 from pydantic import BaseModel, Field
 from enum import IntEnum
-from typing import Optional
 
 from src.shared.technique_service.schemas import TechniqueDifficulty
 
@@ -35,8 +34,9 @@ class ExtractionTechniqueInfo(BaseModel):
     id: str = Field(..., description="ID of the chosen technique")
     name: str = Field(..., description="Name of technique chosen")
     importance: TechniqueImportance = Field(..., description="Technique Importance")
-    difficulty: Optional[TechniqueDifficulty] = Field(
-        default=None, description="Techinque difficulty (leave empty in llm call)"
+    difficulty: TechniqueDifficulty = Field(
+        default=TechniqueDifficulty.novice,
+        description="Techinque difficulty (leave empty in llm call)",
     )
 
 

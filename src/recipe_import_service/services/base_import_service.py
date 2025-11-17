@@ -28,7 +28,9 @@ class BaseImportService:
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str, mock: bool = False) -> Optional[str]:
+    async def url_to_text_recipe(
+        self, url: str, mock: bool = False
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a video URL.
 
         This method should be overridden by subclasses.
@@ -38,7 +40,7 @@ class BaseImportService:
             mock: If True, uses mock data instead of real API calls
 
         Returns:
-            Recipe in markdown format, or None if no recipe found
+            Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
 
         Raises:
             Exception: If any step in the pipeline fails

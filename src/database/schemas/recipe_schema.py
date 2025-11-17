@@ -1,11 +1,12 @@
 """Recipe schema for database storage."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.ai_recipe_engine.schema import TechniqueExtractionResponse
 from src.ai_recipe_engine.schema import RecipeDifficulty
+from src.database.database_utils import validate_recipe_id, validate_user_id
 
 
 class StoredRecipe(TechniqueExtractionResponse):
@@ -32,6 +33,24 @@ class StoredRecipe(TechniqueExtractionResponse):
         default_factory=datetime.now,
         description="Timestamp when the recipe was saved",
     )
+    active_time: float = Field(..., description="Active time in a recipe")
+    total_time: float = Field(..., description="Total time in a recipe")
+    creation_time: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Recipe creation time",
+    )
+
+    @field_validator("recipe_id")
+    @classmethod
+    def _validate_recipe_id(cls, v: str) -> str:
+        """Validate recipe_id format using shared validator."""
+        return validate_recipe_id(v)
+
+    @field_validator("user_id")
+    @classmethod
+    def _validate_user_id(cls, v: str) -> str:
+        """Validate user_id format using shared validator."""
+        return validate_user_id(v)
 
 
 class RecipeDisplayData(BaseModel):
@@ -54,3 +73,9 @@ class RecipeDisplayData(BaseModel):
         default_factory=list,
         description="List of technique IDs used in this recipe",
     )
+
+    @field_validator("recipe_id")
+    @classmethod
+    def _validate_recipe_id(cls, v: str) -> str:
+        """Validate recipe_id format using shared validator."""
+        return validate_recipe_id(v)

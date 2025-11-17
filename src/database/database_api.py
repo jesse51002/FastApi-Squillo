@@ -7,8 +7,8 @@ from dependency_injector.wiring import inject, Provide
 
 from src.core.dependencies import DependencyManager
 from src.database.schemas.user_schema import UserCreate, UserResponse
-from src.database.schemas.recipe_schema import StoredRecipe
-from src.database.service import DatabaseService
+from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
+from src.database.database_service import DatabaseService
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ async def get_user(
 
 @router.post(
     "/users/{user_id}/recipes",
-    response_model=StoredRecipe,
+    response_model=RecipeDisplayData,
     status_code=status.HTTP_201_CREATED,
     summary="Add recipe to user",
     description="Adds a recipe to a user's collection",
@@ -122,7 +122,7 @@ async def add_recipe_to_user(
     user_id: str,
     recipe: StoredRecipe,
     db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
-) -> StoredRecipe:
+) -> RecipeDisplayData:
     """Add a recipe to a user's collection.
 
     Args:
@@ -151,7 +151,7 @@ async def add_recipe_to_user(
 
 @router.get(
     "/users/{user_id}/recipes",
-    response_model=list[StoredRecipe],
+    response_model=list[RecipeDisplayData],
     status_code=status.HTTP_200_OK,
     summary="Get all recipes for user",
     description="Retrieves all recipes belonging to a user",
@@ -160,7 +160,7 @@ async def add_recipe_to_user(
 async def get_user_recipes(
     user_id: str,
     db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
-) -> list[StoredRecipe]:
+) -> list[RecipeDisplayData]:
     """Get all recipes for a user.
 
     Args:
@@ -186,4 +186,46 @@ async def get_user_recipes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve recipes",
+        )
+
+
+@router.get(
+    "/recipes/{recipe_id}",
+    response_model=StoredRecipe,
+    status_code=status.HTTP_200_OK,
+    summary="Get recipe by ID",
+    description="Retrieves a specific recipe's full details by its ID",
+)
+@inject
+async def get_recipe(
+    recipe_id: str,
+    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
+) -> StoredRecipe:
+    """Retrieve a recipe by ID.
+
+    Args:
+        recipe_id: The unique identifier of the recipe
+        db_service: Injected database service
+
+    Returns:
+        StoredRecipe with full recipe details including ingredients and steps
+
+    Raises:
+        HTTPException: If recipe not found or retrieval fails
+    """
+    try:
+        recipe = await db_service.get_recipe(recipe_id)
+        if not recipe:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Recipe with ID '{recipe_id}' not found",
+            )
+        return recipe
+    except HTTPException:
+        raise
+    except Exception:
+        logger.error("Failed to retrieve recipe", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve recipe",
         )

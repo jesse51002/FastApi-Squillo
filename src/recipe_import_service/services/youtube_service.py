@@ -37,22 +37,25 @@ class YouTubeImportService(BaseImportService):
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str, mock: bool = False) -> Optional[str]:
+    async def url_to_text_recipe(
+        self, url: str, mock: bool = False
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a YouTube video URL.
 
         This orchestrates the full pipeline:
         1. Extract video ID from URL
         2. Fetch video metadata from Ensemble API
-        3. If captions available: fetch transcript and use with description
-        4. If no captions (Shorts): use title + description only
-        5. Process with LLM to create recipe
+        3. Extract thumbnail URL
+        4. If captions available: fetch transcript and use with description
+        5. If no captions (Shorts): use title + description only
+        6. Process with LLM to create recipe
 
         Args:
             url: YouTube video URL or video ID
             mock: If True, uses mock data instead of real API calls
 
         Returns:
-            Recipe in markdown format, or None if no recipe found
+            Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
 
         Raises:
             Exception: If any step in the pipeline fails
@@ -60,15 +63,21 @@ class YouTubeImportService(BaseImportService):
         # Step 1: Extract video ID
         video_id = self._extract_video_id(url)
 
-        # Step 2: Fetch metadata and check for captions
+        # Step 2: Fetch metadata, check for captions, and extract thumbnail
         if mock:
-            description, title, transcript_url = await self._fetch_youtube_data_mock(
-                video_id
-            )
+            (
+                description,
+                title,
+                transcript_url,
+                thumbnail_url,
+            ) = await self._fetch_youtube_data_mock(video_id)
         else:
-            description, title, transcript_url = await self._fetch_youtube_data(
-                video_id
-            )
+            (
+                description,
+                title,
+                transcript_url,
+                thumbnail_url,
+            ) = await self._fetch_youtube_data(video_id)
 
         # Step 3 & 4: Create recipe based on available data
         transcript = None
@@ -103,7 +112,7 @@ class YouTubeImportService(BaseImportService):
                 transcript=combined_text, description=""
             )
 
-        return recipe
+        return recipe, thumbnail_url
 
     def _extract_video_id(self, url: str) -> str:
         """Extract video ID from YouTube URL or return as-is if already an ID.
@@ -144,14 +153,14 @@ class YouTubeImportService(BaseImportService):
 
     async def _fetch_youtube_data(
         self, video_id: str
-    ) -> tuple[str, str, Optional[str]]:
+    ) -> tuple[str, str, Optional[str], Optional[str]]:
         """Fetch YouTube video metadata and transcript URL from Ensemble API.
 
         Args:
             video_id: YouTube video ID
 
         Returns:
-            Tuple of (description text, title, transcript URL or None)
+            Tuple of (description text, title, transcript URL or None, thumbnail URL or None)
 
         Raises:
             Exception: If API call fails
@@ -183,6 +192,22 @@ class YouTubeImportService(BaseImportService):
 
         logger.info(f"Loading YouTube video ({video_id})")
 
+        # Extract thumbnail URL (highest resolution)
+        try:
+            thumbnails = youtube_response.data.videoDetails.thumbnail.thumbnails
+            if thumbnails:
+                # Get highest resolution (last item in list is typically highest)
+                highest_res_thumbnail = thumbnails[-1]
+                thumbnail_url = highest_res_thumbnail.url
+                logger.info(
+                    f"Extracted YouTube thumbnail ({highest_res_thumbnail.width}x{highest_res_thumbnail.height})"
+                )
+            else:
+                thumbnail_url = None
+        except Exception as e:
+            logger.warning(f"Failed to extract YouTube thumbnail: {str(e)}")
+            thumbnail_url = None
+
         # Check if captions are available
         transcript_url = None
         if youtube_response.data.captions:
@@ -192,18 +217,18 @@ class YouTubeImportService(BaseImportService):
             if caption_tracks:
                 transcript_url = caption_tracks[0].baseUrl
 
-        return description, title, transcript_url
+        return description, title, transcript_url, thumbnail_url
 
     async def _fetch_youtube_data_mock(
         self, video_id: str
-    ) -> tuple[str, str, Optional[str]]:
+    ) -> tuple[str, str, Optional[str], Optional[str]]:
         """Fetch YouTube video metadata and transcript URL (using mock data).
 
         Args:
             video_id: YouTube video ID (currently ignored, uses mock data)
 
         Returns:
-            Tuple of (description text, title, transcript URL or None)
+            Tuple of (description text, title, transcript URL or None, thumbnail URL or None)
 
         Raises:
             Exception: If mock data cannot be loaded
@@ -224,6 +249,22 @@ class YouTubeImportService(BaseImportService):
         logger.info(f"Loading YouTube video ({video_id})")
         logger.info(f"Description: {description}\n\nTitle: {title}")
 
+        # Extract thumbnail URL (highest resolution)
+        try:
+            thumbnails = youtube_response.data.videoDetails.thumbnail.thumbnails
+            if thumbnails:
+                # Get highest resolution (last item in list is typically highest)
+                highest_res_thumbnail = thumbnails[-1]
+                thumbnail_url = highest_res_thumbnail.url
+                logger.info(
+                    f"Extracted YouTube thumbnail (mock) ({highest_res_thumbnail.width}x{highest_res_thumbnail.height})"
+                )
+            else:
+                thumbnail_url = None
+        except Exception as e:
+            logger.warning(f"Failed to extract YouTube thumbnail from mock: {str(e)}")
+            thumbnail_url = None
+
         # Check if captions are available
         transcript_url = None
         if youtube_response.data.captions:
@@ -233,7 +274,7 @@ class YouTubeImportService(BaseImportService):
             if caption_tracks:
                 transcript_url = caption_tracks[0].baseUrl
 
-        return description, title, transcript_url
+        return description, title, transcript_url, thumbnail_url
 
     async def _fetch_transcript(self, transcript_url: str) -> str:
         """Fetch and parse YouTube transcript XML.

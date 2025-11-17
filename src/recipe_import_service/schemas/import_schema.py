@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 from typing import Optional
-from database.schemas.recipe_schema import RecipeDisplayData
+from src.database.schemas.recipe_schema import RecipeDisplayData
 
 
 class ImportRequest(BaseModel):

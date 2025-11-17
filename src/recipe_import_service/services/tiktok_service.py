@@ -32,29 +32,34 @@ class TiktokImportService(BaseImportService):
     def __init__(self, mistral_service: MistralService):
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str, mock: bool = False) -> Optional[str]:
+    async def url_to_text_recipe(
+        self, url: str, mock: bool = False
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a TikTok video URL.
 
         This orchestrates the full pipeline:
         1. Download TikTok video and get description from Ensemble API
-        2. Extract audio from video
-        3. Process audio + description with Voxtral to create recipe
+        2. Extract thumbnail URL from response
+        3. Extract audio from video
+        4. Process audio + description with Voxtral to create recipe
 
         Args:
             url: TikTok video URL
             mock: If True, uses mock data instead of real API calls
 
         Returns:
-            Recipe in markdown format, or empty string if no recipe found
+            Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
 
         Raises:
             Exception: If any step in the pipeline fails
         """
-        # Step 1: Download video and get description
+        # Step 1: Download video and get description + thumbnail
         if mock:
-            description, video_file = await self._download_tiktok_mock(url)
+            description, video_file, thumbnail_url = await self._download_tiktok_mock(
+                url
+            )
         else:
-            description, video_file = await self._download_tiktok(url)
+            description, video_file, thumbnail_url = await self._download_tiktok(url)
 
         # Step 2: Extract audio from video
         audio_file = extract_audio_from_video(video_file)
@@ -62,20 +67,20 @@ class TiktokImportService(BaseImportService):
         try:
             # Step 3: Create recipe from audio and description
             recipe = await self._create_text_recipe_with_audio(audio_file, description)
-            return recipe
+            return recipe, thumbnail_url
         finally:
             # Clean up temporary audio file
             if audio_file.exists():
                 audio_file.unlink()
 
-    async def _download_tiktok(self, url: str) -> Tuple[str, Path]:
+    async def _download_tiktok(self, url: str) -> Tuple[str, Path, Optional[str]]:
         """Download TikTok video and extract description using Ensemble API.
 
         Args:
             url: TikTok video URL
 
         Returns:
-            Tuple of (description text, video file path)
+            Tuple of (description text, video file path, thumbnail URL)
 
         Raises:
             Exception: If API call or download fails
@@ -97,12 +102,20 @@ class TiktokImportService(BaseImportService):
         data = response.json()
         tiktok_response = TikTokScrapeResponse(**data)
 
-        # Extract description and video download info
+        # Extract description, video download info, and thumbnail
         video_data = tiktok_response.data[0]
         description = video_data.desc
         download_url = video_data.video.download_addr
         cookie_string = video_data.video.cookie_download
         video_id = video_data.video.video_id
+
+        # Extract thumbnail URL
+        try:
+            thumbnail_url = video_data.video.cover
+            logger.info(f"Extracted TikTok thumbnail: {thumbnail_url}")
+        except Exception as e:
+            logger.warning(f"Failed to extract TikTok thumbnail: {str(e)}")
+            thumbnail_url = None
 
         # Parse cookies from string
         cookies = {}
@@ -120,16 +133,16 @@ class TiktokImportService(BaseImportService):
             referer="https://www.tiktok.com/",
         )
 
-        return description, video_file
+        return description, video_file, thumbnail_url
 
-    async def _download_tiktok_mock(self, url: str) -> Tuple[str, Path]:
+    async def _download_tiktok_mock(self, url: str) -> Tuple[str, Path, Optional[str]]:
         """Download TikTok video and extract description (using mock data).
 
         Args:
             url: TikTok video URL (currently ignored, uses mock data)
 
         Returns:
-            Tuple of (description text, video file path)
+            Tuple of (description text, video file path, thumbnail URL)
 
         Raises:
             Exception: If mock data cannot be loaded
@@ -143,4 +156,12 @@ class TiktokImportService(BaseImportService):
 
         description = response.data[0].desc
 
-        return description, temp_video_file
+        # Extract thumbnail URL
+        try:
+            thumbnail_url = response.data[0].video.cover
+            logger.info(f"Extracted TikTok thumbnail (mock): {thumbnail_url}")
+        except Exception as e:
+            logger.warning(f"Failed to extract TikTok thumbnail from mock: {str(e)}")
+            thumbnail_url = None
+
+        return description, temp_video_file, thumbnail_url

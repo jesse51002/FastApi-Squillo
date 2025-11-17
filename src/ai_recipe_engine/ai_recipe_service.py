@@ -74,45 +74,113 @@ class TechniqueExtractionService:
 
         return prompt
 
-    def _validate(self, response: TechniqueExtractionResponse) -> bool:
-        """Validate that all technique IDs in the response are valid.
+    def _validate_and_correct_technique(
+        self, technique_info: Technique, step_number: str, valid_technique_ids: set[str]
+    ) -> dict | None:
+        """Validate and correct a single technique, returning correction info if needed.
 
         Args:
-            response: The technique extraction response to validate
+            technique_info: The technique info to validate
+            step_number: The step number for logging
+            valid_technique_ids: Set of valid technique IDs
 
         Returns:
-            bool: True if all technique IDs are valid
+            dict: Correction info if technique was corrected, None if valid or unmatched
+            Raises ValueError if technique cannot be matched
+        """
+        if technique_info.id not in valid_technique_ids:
+            # Attempt fuzzy matching
+            matched_technique = self.technique_service.match_technique(
+                technique_info.id, technique_info.name
+            )
+
+            # Track the correction
+            correction = {
+                "step": step_number,
+                "original_id": technique_info.id,
+                "original_name": technique_info.name,
+                "corrected_id": matched_technique.id,
+                "corrected_name": matched_technique.name,
+            }
+
+            # Correct the technique info with official values
+            technique_info.id = matched_technique.id
+            technique_info.name = matched_technique.name
+
+            return correction
+        else:
+            # ID is valid, but ensure name matches official name
+            techniques_dict = self.technique_service.get_all_techniques()
+            technique_info.name = techniques_dict[technique_info.id].name
+
+            return None
+
+    def _validate(self, response: TechniqueExtractionResponse) -> bool:
+        """Validate and correct technique IDs in the response using fuzzy matching.
+
+        This method validates that all technique IDs in the response are valid.
+        If invalid IDs are found, it attempts to fuzzy match them to correct techniques
+        and automatically corrects both the ID and name to ensure consistency.
+        Also ensures all technique names match official names even for valid IDs.
+
+        Args:
+            response: The technique extraction response to validate and correct
+
+        Returns:
+            bool: True if all technique IDs are valid or successfully corrected
 
         Raises:
-            ValueError: If any technique ID is invalid
+            ValueError: If any technique ID cannot be fuzzy matched (score < 50%)
         """
         techniques_dict: dict[str, Technique] = (
             self.technique_service.get_all_techniques()
         )
         valid_technique_ids = set(techniques_dict.keys())
 
-        invalid_techniques = []
+        corrections_made = []
+        unmatched_techniques = []
 
         for step in response.steps:
             for technique_info in step.techniques:
-                if technique_info.id not in valid_technique_ids:
-                    invalid_techniques.append(
+                try:
+                    correction = self._validate_and_correct_technique(
+                        technique_info, step.step_number, valid_technique_ids
+                    )
+                    if correction:
+                        corrections_made.append(correction)
+                except ValueError as e:
+                    # Could not find a reasonable match
+                    unmatched_techniques.append(
                         {
                             "step": step.step_number,
                             "technique_id": technique_info.id,
                             "technique_name": technique_info.name,
+                            "error": str(e),
                         }
                     )
 
-        if invalid_techniques:
+        # Log all corrections made
+        if corrections_made:
+            logger.info(
+                f"Corrected {len(corrections_made)} invalid technique ID(s) using fuzzy matching"
+            )
+            for correction in corrections_made:
+                logger.debug(
+                    f"Step {correction['step']}: "
+                    f"'{correction['original_name']}' (ID: {correction['original_id']}) -> "
+                    f"'{correction['corrected_name']}' (ID: {correction['corrected_id']})"
+                )
+
+        # Raise error if any techniques could not be matched
+        if unmatched_techniques:
             error_details = "\n".join(
                 [
-                    f"  - Step {t['step']}: {t['technique_name']} (ID: {t['technique_id']})"
-                    for t in invalid_techniques
+                    f"  - Step {t['step']}: {t['technique_name']} (ID: {t['technique_id']}) - {t['error']}"
+                    for t in unmatched_techniques
                 ]
             )
             raise ValueError(
-                f"Invalid technique IDs found in response:\n{error_details}"
+                f"Could not match the following technique(s) to valid techniques:\n{error_details}"
             )
 
         return True

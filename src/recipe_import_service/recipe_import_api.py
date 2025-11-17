@@ -15,9 +15,10 @@ from src.recipe_import_service.schemas.import_schema import (
     ImportRequest,
     ImportResponse,
 )
-from src.database.service import DatabaseService
-from src.database.schemas.recipe_schema import StoredRecipe
-from src.ai_recipe_engine.service import TechniqueExtractionService
+from src.database.database_service import DatabaseService
+from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
+from src.database.database_utils import generate_recipe_id
+from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
 
 logger = logging.getLogger(__name__)
 
@@ -83,22 +84,27 @@ async def import_recipe(
         # Detect platform
         platform = detect_platform(request.url)
 
-        # Route to appropriate service
+        # Route to appropriate service and extract thumbnail
+        recipe = None
+        thumbnail_url = None
+
         match platform:
             case Platform.TIKTOK:
-                recipe = await tiktok_service.url_to_text_recipe(
+                recipe, thumbnail_url = await tiktok_service.url_to_text_recipe(
                     request.url, mock=request.mock
                 )
             case Platform.YOUTUBE:
-                recipe = await youtube_service.url_to_text_recipe(
+                recipe, thumbnail_url = await youtube_service.url_to_text_recipe(
                     request.url, mock=request.mock
                 )
             case Platform.INSTAGRAM:
-                recipe = await instagram_service.url_to_text_recipe(
+                recipe, thumbnail_url = await instagram_service.url_to_text_recipe(
                     request.url, mock=request.mock
                 )
             case Platform.WEB:
-                recipe = await web_service.url_to_text_recipe(request.url)
+                recipe, thumbnail_url = await web_service.url_to_text_recipe(
+                    request.url
+                )
 
         if recipe is None:
             return ImportResponse(recipe=None, no_recipe_found=True)
@@ -106,17 +112,17 @@ async def import_recipe(
         # Extract techniques from the recipe text
         extraction_result = await technique_service.extract_techniques(recipe)
 
-        # Create a StoredRecipe with the extraction result
-        stored_recipe = StoredRecipe(
-            **extraction_result.model_dump(),
-            recipe_id=DatabaseService.generate_recipe_id(),
-            user_id=request.user_id,
-            source_url=request.url,
-            thumbnail_url=None,
-        )
-
         # Save recipe to database if user_id is provided
         if request.user_id:
+            # Create a StoredRecipe with the extraction result and thumbnail
+            stored_recipe = StoredRecipe(
+                **extraction_result.model_dump(),
+                recipe_id=generate_recipe_id(),
+                user_id=request.user_id,
+                source_url=request.url,
+                thumbnail_url=thumbnail_url,
+            )
+
             try:
                 recipe_display = await db_service.add_recipe_to_user(
                     request.user_id, stored_recipe
@@ -131,11 +137,24 @@ async def import_recipe(
                 )
         else:
             return ImportResponse(
-                recipe=db_service.create_recipe_display(stored_recipe),
+                recipe=RecipeDisplayData(
+                    recipe_id=generate_recipe_id(),
+                    recipe_name=extraction_result.recipe_name,
+                    thumbnail_url=thumbnail_url,
+                    difficulty=extraction_result.difficulty,
+                    technique_ids=list(
+                        {
+                            technique.id
+                            for step in extraction_result.steps
+                            for technique in step.techniques
+                        }
+                    ),
+                ),
                 no_recipe_found=False,
             )
 
     except ValueError as e:
+        logger.error("Recipe import failed", exc_info=True)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception:
         logger.error("Recipe import failed", exc_info=True)

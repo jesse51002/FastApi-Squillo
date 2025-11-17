@@ -1,12 +1,16 @@
 """Mock database service for storing users and recipes in-memory."""
 
 import asyncio
+import logging
+import yaml
 from typing import Optional
 from datetime import datetime
-import uuid
 
+from src.core.constants import MOCK_DATA_PATH
 from src.database.schemas.user_schema import User, UserCreate
 from src.database.schemas.recipe_schema import StoredRecipe, RecipeDisplayData
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
@@ -21,8 +25,8 @@ class DatabaseService:
         _lock: Async lock for thread-safe operations
     """
 
-    _users: dict[str, User] = {}
-    _recipes: dict[str, StoredRecipe] = {}
+    _users: dict[str, User] = None
+    _recipes: dict[str, StoredRecipe] = None
 
     def __init__(self) -> None:
         """Initialize the database service.
@@ -30,6 +34,59 @@ class DatabaseService:
         Note: Storage is class-level, so all instances share the same data.
         """
         self._lock: asyncio.Lock = asyncio.Lock()
+        self._load_mock_data()
+
+    def _load_mock_data(self) -> None:
+        """Load mock data from YAML file into the database.
+
+        Loads users and recipes from the mock_data.yaml file in the resources
+        directory. Only loads data if the file exists and databases are empty.
+        """
+        if not MOCK_DATA_PATH.exists():
+            logger.info("No mock data file found, starting with empty database")
+            return
+
+        if self._users or self._recipes:
+            logger.info("Database already populated, skipping mock data load")
+            return
+
+        try:
+            with open(MOCK_DATA_PATH, "r", encoding="utf-8") as file:
+                mock_data = yaml.safe_load(file)
+
+            if not mock_data:
+                logger.warning("Mock data file is empty")
+                return
+
+            users_data = mock_data.get("users", [])
+            recipes_data = mock_data.get("recipes", [])
+
+            for user_data in users_data:
+                user = User(**user_data)
+                self._users[user.user_id] = user
+
+            for recipe_data in recipes_data:
+                recipe = StoredRecipe(**recipe_data)
+                self._recipes[recipe.recipe_id] = recipe
+
+                user = self._users.get(recipe.user_id)
+                if user:
+                    recipe_display = self.create_recipe_display(recipe)
+                    user.recipes.append(recipe_display)
+                else:
+                    logger.warning(
+                        f"Recipe {recipe.recipe_id} references "
+                        f"non-existent user {recipe.user_id}"
+                    )
+
+            logger.info(
+                f"Loaded {len(self._users)} users and "
+                f"{len(self._recipes)} recipes from mock data"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to load mock data: {e}", exc_info=True)
+            raise
 
     async def get_user(self, user_id: str) -> Optional[User]:
         """Retrieve a user by their ID.
@@ -92,6 +149,8 @@ class DatabaseService:
             if not recipe.recipe_id:
                 raise ValueError("Recipe must have a recipe_id")
 
+            self._calculate_recipe_times(recipe)
+
             # Store the full recipe
             self._recipes[recipe.recipe_id] = recipe
 
@@ -104,7 +163,38 @@ class DatabaseService:
 
             return recipe_display
 
-    def create_recipe_display(self, recipe: StoredRecipe):
+    def _calculate_recipe_times(self, recipe: StoredRecipe) -> None:
+        """Calculate active and total time for a recipe.
+
+        Args:
+            recipe: The recipe to calculate times for
+
+        Returns:
+            Tuple of (active_time, total_time) in minutes
+        """
+        active_time = 0.0
+        total_time = 0.0
+
+        for step in recipe.steps:
+            total_time += step.estimated_time
+            if step.is_active_step:
+                active_time += step.estimated_time
+
+        recipe.active_time = active_time
+        recipe.total_time = total_time
+
+    def create_recipe_display(self, recipe: StoredRecipe) -> RecipeDisplayData:
+        """Create RecipeDisplayData from a StoredRecipe.
+
+        Extracts technique IDs and calculates time metrics for display.
+
+        Args:
+            recipe: The full recipe to create display data from
+
+        Returns:
+            RecipeDisplayData with all calculated fields
+        """
+        # Extract unique technique IDs
         technique_ids = set()
         for step in recipe.steps:
             for technique in step.techniques:
@@ -148,12 +238,3 @@ class DatabaseService:
         """
         async with self._lock:
             return self._recipes.get(recipe_id)
-
-    @staticmethod
-    def generate_recipe_id() -> str:
-        """Generate a unique recipe ID.
-
-        Returns:
-            A UUID4 string to use as a recipe ID
-        """
-        return str(uuid.uuid4())

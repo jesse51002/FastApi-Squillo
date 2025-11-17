@@ -47,6 +47,7 @@ class InstagramVideoData(BaseModel):
     edge_media_to_caption: MediaToCaption = Field(
         ..., description="Video captions/description"
     )
+    thumbnail_src: str = Field(..., description="Thumbnail URL for the video")
 
     class Config:
         extra = "ignore"
