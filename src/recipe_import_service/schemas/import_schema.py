@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from src.database.schemas.recipe_schema import RecipeDisplayData
 
 
 class ImportRequest(BaseModel):
@@ -23,7 +24,9 @@ class ImportRequest(BaseModel):
 class ImportResponse(BaseModel):
     """Response model for recipe import (used by all platforms)."""
 
-    recipe: str = Field(..., description="Extracted recipe in markdown format")
+    recipe: Optional[RecipeDisplayData] = Field(
+        ..., description="Extracted recipe in markdown format"
+    )
     no_recipe_found: bool = Field(
         ..., description="Whether or not a recipe was found in the video"
     )

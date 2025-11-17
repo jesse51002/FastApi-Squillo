@@ -39,19 +39,21 @@ class WebRecipeService(BaseImportService):
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str) -> Optional[str]:
+    async def _url_to_text_recipe(
+        self, url: str
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a recipe website URL.
 
         This orchestrates the full pipeline:
         1. Attempt to extract structured data using recipe-scrapers
-        2. If structured data found, format it as markdown
+        2. If structured data found, format it as markdown and extract image
         3. If no structured data, fall back to LLM extraction from HTML
 
         Args:
             url: Recipe website URL
 
         Returns:
-            Recipe in markdown format, or None if no recipe found
+            Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
 
         Raises:
             Exception: If both structured extraction and LLM extraction fail
@@ -77,15 +79,18 @@ class WebRecipeService(BaseImportService):
         if recipe_data:
             # Format structured data as markdown
             recipe = self._format_recipe_markdown(recipe_data)
+            thumbnail_url = recipe_data.image
             logger.info(
                 f"Successfully extracted recipe using structured data: {recipe_data.title}"
             )
-            return recipe
+            if thumbnail_url:
+                logger.info(f"Extracted web recipe thumbnail: {thumbnail_url}")
+            return recipe, thumbnail_url
         else:
-            # Step 2: Fall back to LLM extraction
+            # Step 2: Fall back to LLM extraction (no thumbnail available)
             logger.info("No structured data found, falling back to LLM extraction")
             recipe = await self._extract_recipe_with_llm(html_content)
-            return recipe
+            return recipe, None
 
     async def _scrape_recipe_structured_data(
         self, url: str, html_content: str
@@ -218,8 +223,6 @@ class WebRecipeService(BaseImportService):
         """
         try:
             clean_content = self._extract_readable_text(html_content)
-
-            logger.debug(clean_content)
 
             # Get JSON schema from LlmOutputFormat
             json_schema = LlmOutputFormat.model_json_schema()

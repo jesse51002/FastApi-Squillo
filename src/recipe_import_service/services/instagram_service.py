@@ -41,29 +41,34 @@ class InstagramImportService(BaseImportService):
         """
         self.mistral_service = mistral_service
 
-    async def url_to_text_recipe(self, url: str, mock: bool = False) -> Optional[str]:
+    async def _url_to_text_recipe(
+        self, url: str, mock: bool = False
+    ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from an Instagram video URL.
 
         This orchestrates the full pipeline:
         1. Download Instagram video and get description
-        2. Extract audio from video
-        3. Process audio + description with Voxtral to create recipe
+        2. Extract thumbnail URL from response
+        3. Extract audio from video
+        4. Process audio + description with Voxtral to create recipe
 
         Args:
             url: Instagram video URL
             mock: If True, uses mock data instead of real API calls
 
         Returns:
-            Recipe in markdown format, or None if no recipe found
+            Tuple of (recipe in markdown format, thumbnail URL) or (None, None) if no recipe found
 
         Raises:
             Exception: If any step in the pipeline fails
         """
-        # Step 1: Download video and get description
+        # Step 1: Download video and get description + thumbnail
         if mock:
-            description, video_file = await self._download_instagram_mock(url)
+            description, video_file, thumbnail_url = (
+                await self._download_instagram_mock(url)
+            )
         else:
-            description, video_file = await self._download_instagram(url)
+            description, video_file, thumbnail_url = await self._download_instagram(url)
 
         # Step 2: Extract audio from video
         audio_file = extract_audio_from_video(video_file)
@@ -71,10 +76,7 @@ class InstagramImportService(BaseImportService):
         try:
             # Step 3: Create recipe from audio and description
             recipe = await self._create_text_recipe_with_audio(audio_file, description)
-
-            logger.debug(f"Final Recipe: \n {recipe}")
-
-            return recipe
+            return recipe, thumbnail_url
         finally:
             # Clean up temporary audio file
             if audio_file.exists():
@@ -114,14 +116,14 @@ class InstagramImportService(BaseImportService):
 
         raise ValueError(f"Invalid Instagram URL or shortcode: {url}")
 
-    async def _download_instagram(self, url: str) -> Tuple[str, Path]:
+    async def _download_instagram(self, url: str) -> Tuple[str, Path, Optional[str]]:
         """Download Instagram video and extract description using Ensemble API.
 
         Args:
             url: Instagram video URL or shortcode
 
         Returns:
-            Tuple of (description text, video file path)
+            Tuple of (description text, video file path, thumbnail URL)
 
         Raises:
             Exception: If API call or download fails
@@ -160,6 +162,14 @@ class InstagramImportService(BaseImportService):
         # Extract video URL
         video_url = instagram_response.data.video_url
 
+        # Extract thumbnail URL
+        try:
+            thumbnail_url = instagram_response.data.thumbnail_src
+            logger.info(f"Extracted Instagram thumbnail: {thumbnail_url}")
+        except Exception as e:
+            logger.warning(f"Failed to extract Instagram thumbnail: {str(e)}")
+            thumbnail_url = None
+
         logger.info(f"Loading Instagram video (shortcode: {shortcode})")
 
         # Download the video using utility function
@@ -170,16 +180,18 @@ class InstagramImportService(BaseImportService):
             referer="https://www.instagram.com/",
         )
 
-        return description, video_file
+        return description, video_file, thumbnail_url
 
-    async def _download_instagram_mock(self, url: str) -> Tuple[str, Path]:
+    async def _download_instagram_mock(
+        self, url: str
+    ) -> Tuple[str, Path, Optional[str]]:
         """Download Instagram video and extract description (using mock data).
 
         Args:
             url: Instagram video URL (currently ignored, uses mock data)
 
         Returns:
-            Tuple of (description text, video file path)
+            Tuple of (description text, video file path, thumbnail URL)
 
         Raises:
             Exception: If mock data cannot be loaded
@@ -201,4 +213,12 @@ class InstagramImportService(BaseImportService):
                 0
             ].node.text
 
-        return description, temp_video_file
+        # Extract thumbnail URL
+        try:
+            thumbnail_url = instagram_response.data.thumbnail_src
+            logger.info(f"Extracted Instagram thumbnail (mock): {thumbnail_url}")
+        except Exception as e:
+            logger.warning(f"Failed to extract Instagram thumbnail from mock: {str(e)}")
+            thumbnail_url = None
+
+        return description, temp_video_file, thumbnail_url

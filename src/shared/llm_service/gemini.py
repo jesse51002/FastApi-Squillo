@@ -51,9 +51,6 @@ class GeminiService(BaseLLMService):
         Raises:
             Exception: If the API call fails or times out
         """
-
-        logger.debug(f"Input prompt:\\n\\n {input_prompt}")
-
         try:
             # Build base config
             config = {
@@ -67,8 +64,6 @@ class GeminiService(BaseLLMService):
 
                 config["response_mime_type"] = "application/json"
                 config["response_json_schema"] = json_schema
-
-                logger.debug("Using JSON schema with Gemini")
 
             # Make the API call using the official SDK
             response = self.client.models.generate_content(

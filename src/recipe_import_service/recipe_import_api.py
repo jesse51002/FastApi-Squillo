@@ -15,16 +15,18 @@ from src.recipe_import_service.schemas.import_schema import (
     ImportRequest,
     ImportResponse,
 )
+from src.database.database_service import DatabaseService
+from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/v1/import",
+    prefix="/v1",
 )
 
 
 @router.post(
-    "",
+    "/import",
     response_model=ImportResponse,
     status_code=status.HTTP_200_OK,
     summary="Import recipe from any supported platform",
@@ -45,6 +47,10 @@ async def import_recipe(
     web_service: WebRecipeService = Depends(
         Provide[DependencyManager.web_recipe_service]
     ),
+    technique_extraction_service: TechniqueExtractionService = Depends(
+        Provide[DependencyManager.technique_extraction_service]
+    ),
+    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
 ) -> ImportResponse:
     """Import recipe from any supported platform.
 
@@ -57,6 +63,8 @@ async def import_recipe(
         youtube_service: Injected YouTube import service
         instagram_service: Injected Instagram import service
         web_service: Injected web recipe import service
+        technique_service: Injected technique extraction service
+        db_service: Injected database service
 
     Returns:
         ImportResponse: Extracted recipe in markdown format
@@ -67,42 +75,35 @@ async def import_recipe(
     try:
         # Validate input
         if not request.url.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="URL cannot be empty"
-            )
+            raise ValueError("URL cannot be empty")
 
         # Detect platform
         platform = detect_platform(request.url)
 
         # Route to appropriate service
+        service = None
         match platform:
             case Platform.TIKTOK:
-                recipe = await tiktok_service.url_to_text_recipe(
-                    request.url, mock=request.mock
-                )
+                service = tiktok_service
             case Platform.YOUTUBE:
-                recipe = await youtube_service.url_to_text_recipe(
-                    request.url, mock=request.mock
-                )
+                service = youtube_service
             case Platform.INSTAGRAM:
-                recipe = await instagram_service.url_to_text_recipe(
-                    request.url, mock=request.mock
-                )
+                service = instagram_service
             case Platform.WEB:
-                recipe = await web_service.url_to_text_recipe(request.url)
+                service = web_service
 
-        # TODO: Save recipe to database if user_id is provided
-        if request.user_id and recipe:
-            # Implement database save logic here
-            pass
-
-        if recipe is not None:
-            return ImportResponse(recipe=recipe, no_recipe_found=False)
-        else:
-            return ImportResponse(recipe="", no_recipe_found=True)
+        # Use the service's import_recipe method
+        return await service.import_recipe(
+            url=request.url,
+            user_id=request.user_id,
+            technique_extraction_service=technique_extraction_service,
+            db_service=db_service,
+            mock=request.mock,
+        )
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        logger.error("Recipe import failed", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
         logger.error("Recipe import failed", exc_info=True)
         raise HTTPException(

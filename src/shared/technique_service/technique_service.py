@@ -2,6 +2,9 @@
 
 import yaml
 import logging
+import string
+
+from rapidfuzz import process, fuzz
 
 from src.core.constants import TECHNIQUES_PATH
 from src.shared.technique_service.schemas import Technique
@@ -58,3 +61,97 @@ class TechniqueService:
             Dictionary mapping technique names to Technique objects.
         """
         return self.techniques
+
+    def _normalize_string(self, text: str) -> str:
+        """Normalize a string for fuzzy matching by lowercasing and removing punctuation.
+
+        Args:
+            text: The string to normalize
+
+        Returns:
+            str: Normalized string (lowercase, no punctuation)
+        """
+        # Create translation table to remove punctuation
+        translator = str.maketrans("", "", string.punctuation)
+        # Remove punctuation and convert to lowercase
+        return text.translate(translator).lower()
+
+    def match_technique(self, id: str, name: str) -> Technique:
+        """Find the best matching technique using fuzzy matching on ID and name.
+
+        This method is case-insensitive and ignores punctuation to handle
+        variations in capitalization and formatting from LLM outputs.
+        Uses RapidFuzz's process.extract with limit=5 for optimized matching.
+
+        Args:
+            id: The technique ID to match (may be incorrect)
+            name: The technique name to match (may be incorrect)
+
+        Returns:
+            Technique: The best matching technique from the loaded techniques
+
+        Raises:
+            ValueError: If no reasonable match is found (combined score < 50%)
+        """
+        if not self.techniques:
+            raise ValueError("No techniques loaded")
+
+        # Normalize name only (ID should be matched as-is)
+        normalized_input_name = self._normalize_string(name)
+
+        # Prepare choices for matching
+        technique_ids = list(self.techniques.keys())
+        normalized_names = [
+            self._normalize_string(self.techniques[tid].name) for tid in technique_ids
+        ]
+
+        # Get top 5 candidates from ID matching (no normalization)
+        id_matches = process.extract(id, technique_ids, scorer=fuzz.ratio, limit=5)
+
+        # Get top 5 candidates from name matching (normalized)
+        name_matches = process.extract(
+            normalized_input_name, normalized_names, scorer=fuzz.ratio, limit=5
+        )
+
+        # Build score dictionaries to reuse scores from extract results
+        id_scores = {idx: score for _, score, idx in id_matches}
+        name_scores = {idx: score for _, score, idx in name_matches}
+
+        # Collect all candidate indices from both matches
+        candidate_indices = set(id_scores.keys()) | set(name_scores.keys())
+
+        # Calculate combined scores for all candidates
+        best_score = 0.0
+        best_index = 0
+
+        for idx in candidate_indices:
+            # Get scores from dictionaries (default to 0 if not in top 5)
+            id_score = id_scores.get(idx, 0.0)
+            name_score = name_scores.get(idx, 0.0)
+
+            # Combine scores with weighting: 50% ID, 50% name
+            combined_score = (id_score * 0.5) + (name_score * 0.5)
+
+            if combined_score > best_score:
+                best_score = combined_score
+                best_index = idx
+
+        # Check if we found a reasonable match
+        if best_score < 45.0:
+            raise ValueError(
+                f"No reasonable match found for technique (id='{id}', name='{name}'). "
+                f"Best match score: {best_score:.1f}%"
+            )
+
+        matched_technique_id = technique_ids[best_index]
+        matched_technique = self.techniques[matched_technique_id]
+
+        # Log warning if match quality is low
+        if best_score < 80.0:
+            logger.warning(
+                f"Low confidence fuzzy match: input (id='{id}', name='{name}') -> "
+                f"matched (id='{matched_technique.id}', name='{matched_technique.name}') "
+                f"with score {best_score:.1f}%"
+            )
+
+        return matched_technique

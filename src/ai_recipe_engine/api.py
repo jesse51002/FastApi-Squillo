@@ -7,7 +7,7 @@ from dependency_injector.wiring import inject, Provide
 
 from src.core.dependencies import DependencyManager
 from .schema import TechniqueExtractionRequest, TechniqueExtractionResponse
-from .service import TechniqueExtractionService
+from .ai_recipe_service import TechniqueExtractionService
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/techinque-extract",
+    "/technique-extract",
     response_model=TechniqueExtractionResponse,
     status_code=status.HTTP_200_OK,
     summary="Extract cooking techniques from recipe",

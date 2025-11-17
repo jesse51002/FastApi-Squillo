@@ -105,7 +105,7 @@ def extract_audio_from_video(video_file_path: Path) -> Path:
         if result.returncode != 0:
             raise Exception(f"ffmpeg failed: {result.stderr}")
 
-        logger.debug(f"Audio extracted successfully to {temp_audio}")
+        logger.info(f"Audio extracted successfully to {temp_audio}")
         return temp_audio
 
     except FileNotFoundError:
@@ -155,7 +155,7 @@ async def download_video(
     os.close(temp_video_fd)
 
     try:
-        logger.debug(f"Downloading video {video_id}")
+        logger.info(f"Downloading video {video_id}")
 
         async with httpx.AsyncClient(timeout=30) as client:
             async with client.stream(
@@ -171,7 +171,7 @@ async def download_video(
                     async for chunk in response.aiter_bytes(chunk_size=8192):
                         f.write(chunk)
 
-        logger.debug(f"Video downloaded successfully to {temp_video}")
+        logger.info(f"Video downloaded successfully to {temp_video}")
         return temp_video
 
     except Exception as e:

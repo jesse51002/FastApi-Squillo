@@ -34,6 +34,14 @@
 - 2 blank lines around top-level functions/classes
 - 1 blank line between methods
 
+**Code Complexity & Nesting**
+- **Limit deep nesting** - avoid nesting more than 3 levels deep
+- **Extract functions when nesting gets complex** - create new helper functions/methods
+- Good: Extract nested logic into separate, well-named private methods
+- Bad: Deep nesting (4+ levels) makes code hard to read and maintain
+- Example: Instead of `if/for/if/for/if/try`, extract the inner logic into `_validate_and_correct_item()`
+- Benefits: Easier to test, read, and maintain; follows Single Responsibility Principle
+
 **Type Hints**
 - Always use type hints for function parameters and return values
 - Use native collections for Python 3.9+ (`list[str]`, `dict[str, int]`)

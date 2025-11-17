@@ -2,7 +2,6 @@
 
 from pydantic import BaseModel, Field
 from enum import IntEnum
-from typing import Optional
 
 from src.shared.technique_service.schemas import TechniqueDifficulty
 
@@ -17,6 +16,12 @@ class TechniqueExtractionRequest(BaseModel):
     )
 
 
+class RecipeDifficulty(IntEnum):
+    simple = 1
+    medium = 2
+    complex = 3
+
+
 class TechniqueImportance(IntEnum):
     not_important = 1
     small_importance = 2
@@ -29,8 +34,9 @@ class ExtractionTechniqueInfo(BaseModel):
     id: str = Field(..., description="ID of the chosen technique")
     name: str = Field(..., description="Name of technique chosen")
     importance: TechniqueImportance = Field(..., description="Technique Importance")
-    difficulty: Optional[TechniqueDifficulty] = Field(
-        default=None, description="Techinque difficulty (leave empty in llm call)"
+    difficulty: TechniqueDifficulty = Field(
+        default=TechniqueDifficulty.novice,
+        description="Techinque difficulty (leave empty in llm call)",
     )
 
 
@@ -64,6 +70,10 @@ class ExtractionRecipeStep(BaseModel):
         ...,
         description="The estimated amount of time the step will take in minutes (decimals allowed)",
     )
+    is_active_step: bool = Field(
+        ...,
+        description="Whether it is an active step (doing) or a passive step (waiting)",
+    )
 
 
 class TechniqueExtractionResponse(BaseModel):
@@ -76,4 +86,13 @@ class TechniqueExtractionResponse(BaseModel):
     steps: list[ExtractionRecipeStep] = Field(
         ..., description="List of recipe steps with techniques"
     )
-    status: str = Field(default="success", description="Status of the extraction")
+    difficulty: RecipeDifficulty = Field(..., description="Difficulty of recipe (1-3)")
+    servings: int = Field(..., description="How many servings this recipe has")
+    active_time: float = Field(
+        default=0.0,
+        description="Total active time for the recipe in minutes (leave empty in llm call)",
+    )
+    total_time: float = Field(
+        default=0.0,
+        description="Total time for the recipe in minutes (leave empty in llm call)",
+    )
