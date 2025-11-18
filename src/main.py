@@ -8,6 +8,9 @@ from src.core.dependencies import container
 from src.ai_recipe_engine.api import router as technique_router
 from src.recipe_import_service.recipe_import_api import router as import_router
 from src.database.database_api import router as database_router
+from src.educational_engine.educational_engine_api import (
+    router as educational_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -38,6 +41,7 @@ def create_app() -> FastAPI:
             "src.ai_recipe_engine.api",
             "src.recipe_import_service.recipe_import_api",
             "src.database.database_api",
+            "src.educational_engine.educational_engine_api",
         ]
     )
 
@@ -45,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(technique_router)
     app.include_router(import_router)
     app.include_router(database_router)
+    app.include_router(educational_router)
 
     return app
 

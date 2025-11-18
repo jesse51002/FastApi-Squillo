@@ -23,7 +23,7 @@ COMPLETIONS_API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 
 class MistralModels(Enum):
-    small = "mistral-small-latest"
+    small = "mistral-small-2503"
     medium = "mistral-medium-latest"
     large = "mistral-large-latest"
     reasoning_medium = "magistral-medium-latest"
@@ -103,7 +103,7 @@ class MistralService(BaseLLMService):
                 else:
                     # print(f"LLM API Error: {response.status_code} - {response.text}")
                     raise Exception(
-                        f"LLM call failed with status {response.status_code}"
+                        f"LLM call failed with status {response.status_code} : {response.text}"
                     )
 
             except httpx.TimeoutException:

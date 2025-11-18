@@ -9,9 +9,14 @@ from src.shared.technique_service.technique_service import TechniqueService
 from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
 from src.recipe_import_service.services.tiktok_service import TiktokImportService
 from src.recipe_import_service.services.youtube_service import YouTubeImportService
-from src.recipe_import_service.services.instagram_service import InstagramImportService
+from src.recipe_import_service.services.instagram_service import (
+    InstagramImportService,
+)
 from src.recipe_import_service.services.web_recipe_service import WebRecipeService
 from src.database.database_service import DatabaseService
+from src.educational_engine.educational_engine_service import (
+    EducationalEngineService,
+)
 
 
 class DependencyManager(containers.DeclarativeContainer):
@@ -54,6 +59,13 @@ class DependencyManager(containers.DeclarativeContainer):
 
     # Database Service
     database_service = providers.Singleton(DatabaseService)
+
+    # Educational Engine Service
+    educational_engine_service = providers.Singleton(
+        EducationalEngineService,
+        database_service=database_service,
+        technique_service=technique_service,
+    )
 
 
 # Global container instance

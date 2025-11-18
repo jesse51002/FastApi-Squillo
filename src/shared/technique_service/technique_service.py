@@ -23,6 +23,7 @@ class TechniqueService:
         """Initialize the TechniqueService and load all techniques from YAML files."""
         self.techniques: dict[str, Technique] = {}
         self._load_techniques()
+        self._validate_techniques()
 
     def _load_techniques(self) -> None:
         """Load all technique YAML files from the techniques directory.
@@ -53,6 +54,70 @@ class TechniqueService:
                 self.techniques[technique.id] = technique
 
         logger.info(f"Loaded {len(self.techniques)} techniques into technique service")
+
+    def _validate_techniques(self) -> None:
+        """Validate technique references and restrictions.
+
+        Ensures:
+        1. All prerequisite_video IDs reference existing techniques
+        2. All video_overwrite IDs reference existing techniques
+        3. Techniques with restrict_classification=True are referenced
+           in at least one other technique's prerequisite_video field
+           (no "island nodes")
+
+        Raises:
+            ValueError: If any validation check fails
+        """
+        errors: list[str] = []
+
+        # Track which techniques are referenced as prerequisites
+        prerequisite_references: set[str] = set()
+
+        for technique_id, technique in self.techniques.items():
+            # Validate prerequisite_video references
+            if technique.prerequisite_video:
+                if technique.prerequisite_video not in self.techniques:
+                    errors.append(
+                        f"Technique '{technique.name}' (id={technique_id}) "
+                        f"references non-existent prerequisite_video: "
+                        f"{technique.prerequisite_video}"
+                    )
+                else:
+                    # Track this reference
+                    prerequisite_references.add(technique.prerequisite_video)
+
+            # Validate video_overwrite references
+            if technique.video_overwrite:
+                if technique.video_overwrite not in self.techniques:
+                    errors.append(
+                        f"Technique '{technique.name}' (id={technique_id}) "
+                        f"references non-existent video_overwrite: "
+                        f"{technique.video_overwrite}"
+                    )
+
+        # Validate that restricted techniques are not island nodes
+        for technique_id, technique in self.techniques.items():
+            if technique.restrict_classification:
+                if technique_id not in prerequisite_references:
+                    errors.append(
+                        f"Technique '{technique.name}' (id={technique_id}) "
+                        f"has restrict_classification=True but is not referenced "
+                        f"in any other technique's prerequisite_video field. "
+                        f"This creates an unreachable 'island node'."
+                    )
+
+        # Raise all errors together
+        if errors:
+            error_message = "Technique validation failed:\n" + "\n".join(
+                f"  - {error}" for error in errors
+            )
+            logger.error(error_message, exc_info=True)
+            raise ValueError(error_message)
+
+        logger.info(
+            f"Technique validation passed: {len(self.techniques)} techniques, "
+            f"{len(prerequisite_references)} prerequisite references"
+        )
 
     def get_all_techniques(self) -> dict[str, Technique]:
         """Get all loaded techniques.

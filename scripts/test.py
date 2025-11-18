@@ -53,7 +53,7 @@ Serve hot with steamed rice, roasted vegetables, or a fresh salad.
 }
 
 start_time = time.time()
-response = requests.post("http://localhost:8000/v1/techinque-extract", json=input_recipe)
+response = requests.post("http://localhost:8000/v1/technique-extract", json=input_recipe)
 print(response.json())
 
 print(f"\n\nFinished in {time.time() - start_time} seconds")
