@@ -31,13 +31,13 @@ class Technique(BaseModel):
     )
     restrict_classification: bool = Field(
         False,
-        description="Whether or not to let this techinque be classified during techinque extractions (some techniques should be manually recommended based on other techniques)",
+        description="Whether or not to let this technique be classified during technique extractions (some techniques should be manually recommended based on other techniques)",
     )
     prerequisite_video: Optional[str] = Field(
         None,
-        description="Video to be recommeded to user before they watch this one (This is usually a saftey or basics technique)",
+        description="Video to be recommended to user before they watch this one (This is usually a saftey or basics technique)",
     )
     video_overwrite: Optional[str] = Field(
         None,
-        description="Video to overwrite if it was also recommended (this is usually when there is a less specific version of the)",
+        description="Video to overwrite if it was also recommended (this is usually when there is a less specific version of the technique)",
     )

@@ -53,10 +53,13 @@ class TechniqueExtractionService:
         )
 
         # Format techniques for prompt (excluding tips and difficulty)
-        techniques_list = [
-            f"- **{tech.name}** ({tech.id}): {tech.description}"
-            for tech in techniques_dict.values()
-        ]
+        techniques_list = []
+        for tech in techniques_dict.values():
+            if tech.restrict_classification:
+                continue
+
+            techniques_list.append(f"- **{tech.name}** ({tech.id}): {tech.description}")
+
         techniques_text = "\n".join(techniques_list)
 
         # Get JSON schema from Pydantic model

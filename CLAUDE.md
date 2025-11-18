@@ -49,6 +49,13 @@
 - Use `Union` or `|` for multiple types
 - Create type aliases for complex types
 
+**DateTime Handling**
+- **ALWAYS use UTC timezone for datetime fields**
+- Good: `datetime.now(timezone.utc)`
+- Bad: `datetime.now()` (uses local timezone)
+- Use `default_factory=lambda: datetime.now(timezone.utc)` for Pydantic fields
+- Store all timestamps in UTC, convert to user's timezone only in the frontend
+
 **Async/Await**
 - Always await coroutines
 - Use async-compatible libraries (`httpx`, `aiohttp`, `asyncpg`, `aiofiles`)
