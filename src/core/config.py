@@ -41,7 +41,7 @@ class AppConfig(BaseSettings):
 
 
 # Global config instance
-settings = AppConfig()  # pyright: ignore
+settings = AppConfig()  # pyright: ignore (Parameters are instantiated by env)
 
 
 def setup_logging(log_level: str | None = None) -> None:

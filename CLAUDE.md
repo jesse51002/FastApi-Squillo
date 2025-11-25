@@ -89,7 +89,7 @@ src/
 │   └── base.py
 ├── auth/                   # Authentication domain
 │   ├── router.py           # API routes
-│   ├── schemas.py          # Pydantic modelsslo
+│   ├── schemas.py          # Pydantic models
 │   ├── models.py           # Database models
 │   ├── service.py          # Business logic
 │   ├── repository.py       # Data access
