@@ -4,15 +4,15 @@ import logging
 from datetime import datetime, timezone
 
 from src.database.database_service import DatabaseService
-from src.shared.technique_service.technique_service import TechniqueService
 from src.database.schemas.user_schema import (
     TechniqueViewingInfo,
     TechniqueWatchSession,
 )
 from src.educational_engine.schemas import (
-    TechniqueRecommendationResponse,
     MarkTechniqueWatchedResponse,
+    TechniqueRecommendationResponse,
 )
+from src.shared.technique_service.technique_service import TechniqueService
 
 logger = logging.getLogger(__name__)
 
@@ -172,8 +172,8 @@ class EducationalEngineService:
         if skipped:
             viewing_info.skipped = True
 
-        # Save updated user
-        await self.database_service.save_user(user)
+        # Update user data
+        await self.database_service.update_user(user)
 
         return MarkTechniqueWatchedResponse(
             success=True,

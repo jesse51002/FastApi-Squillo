@@ -2,12 +2,13 @@
 
 import asyncio
 import logging
-import yaml
 from typing import Optional
 
+import yaml
+
 from src.core.constants import MOCK_DATA_PATH
+from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
 from src.database.schemas.user_schema import User, UserCreate
-from src.database.schemas.recipe_schema import StoredRecipe, RecipeDisplayData
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class DatabaseService:
 
     _users: dict[str, User] = {}
     _recipes: dict[str, StoredRecipe] = {}
-    _lock: Optional[asyncio.Lock] = None
+    _lock: asyncio.Lock
 
     def __init__(self) -> None:
         """Initialize the database service.
@@ -124,6 +125,25 @@ class DatabaseService:
                 recipes=[],
             )
             self._users[user_create.user_id] = user
+            return user
+
+    async def update_user(self, user: User) -> User:
+        """Update an existing user's data.
+
+        Args:
+            user: User object with updated data
+
+        Returns:
+            The updated User object
+
+        Raises:
+            ValueError: If the user doesn't exist
+        """
+        async with self._lock:
+            if user.user_id not in self._users:
+                raise ValueError(f"User with ID '{user.user_id}' not found")
+
+            self._users[user.user_id] = user
             return user
 
     async def add_recipe_to_user(

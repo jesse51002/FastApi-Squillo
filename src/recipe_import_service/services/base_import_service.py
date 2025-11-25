@@ -5,17 +5,16 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from src.shared.llm_service.mistral import MistralService
 from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
 from src.database.database_service import DatabaseService
-from src.recipe_import_service.schemas.import_schema import (
-    LlmOutputFormat,
-    ImportResponse,
-)
-from src.util.template_formatter import TemplateFormatter
-from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
 from src.database.database_utils import generate_recipe_id
-
+from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
+from src.recipe_import_service.schemas.import_schema import (
+    ImportResponse,
+    LlmOutputFormat,
+)
+from src.shared.llm_service.mistral import MistralModels, MistralService
+from src.util.template_formatter import TemplateFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +23,8 @@ class BaseImportService:
     """Base class for recipe import services (TikTok, YouTube, Instagram, etc.)."""
 
     # Subclasses should define these
-    MODEL: Optional[str] = None
-    TEMPLATE_PATH: Optional[Path] = None
+    MODEL: MistralModels
+    TEMPLATE_PATH: Path
 
     def __init__(self, mistral_service: MistralService) -> None:
         """Initialize base import service.

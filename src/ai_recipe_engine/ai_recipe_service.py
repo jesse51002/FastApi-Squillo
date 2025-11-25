@@ -1,16 +1,19 @@
 """Service layer for technique extraction business logic."""
 
 import json
-from pathlib import Path
 import logging
+from pathlib import Path
+
 import yaml
 
+from src.ai_recipe_engine.schema import (
+    ExtractionTechniqueInfo,
+    TechniqueExtractionResponse,
+)
 from src.shared.llm_service.base import BaseLLMService
-from src.shared.technique_service.technique_service import TechniqueService
 from src.shared.technique_service.schemas import Technique
-
+from src.shared.technique_service.technique_service import TechniqueService
 from src.util.template_formatter import TemplateFormatter
-from .schema import TechniqueExtractionResponse
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +81,10 @@ class TechniqueExtractionService:
         return prompt
 
     def _validate_and_correct_technique(
-        self, technique_info: Technique, step_number: str, valid_technique_ids: set[str]
+        self,
+        technique_info: ExtractionTechniqueInfo,
+        step_number: str,
+        valid_technique_ids: set[str],
     ) -> dict | None:
         """Validate and correct a single technique, returning correction info if needed.
 

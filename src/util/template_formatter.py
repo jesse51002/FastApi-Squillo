@@ -8,7 +8,7 @@ class TemplateFormatter:
     """Utility for reading and formatting template files with dynamic data."""
 
     @staticmethod
-    def read_template(file_path: str) -> str:
+    def read_template(path: Path) -> str:
         """Read template file contents.
 
         Args:
@@ -21,9 +21,8 @@ class TemplateFormatter:
             FileNotFoundError: If the template file doesn't exist
             IOError: If there's an error reading the file
         """
-        path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"Template file not found: {file_path}")
+            raise FileNotFoundError(f"Template file not found: {str(path)}")
 
         try:
             return path.read_text(encoding="utf-8")
@@ -31,7 +30,7 @@ class TemplateFormatter:
             raise IOError(f"Error reading template file: {str(e)}")
 
     @classmethod
-    def format_template(cls, file_path: str, **kwargs: Any) -> str:
+    def format_template(cls, file_path: Path, **kwargs: Any) -> str:
         """Read a template file and format it with provided data.
 
         Args:
