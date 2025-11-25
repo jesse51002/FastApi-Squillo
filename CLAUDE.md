@@ -262,3 +262,71 @@ src/
 - This ensures code quality and consistency across the project
 
 **Remember: Code is read more often than written. Prioritize clarity, modularity, and maintainability.**
+
+## Codebase Overview
+
+**IMPORTANT: Only update this section for major architectural changes:**
+- Adding a new domain (e.g., new top-level directory in `src/`)
+- Major restructuring of existing domains
+- Adding new supporting directories with significant purpose
+- Changing core request flows or architecture patterns
+
+**Keep descriptions high-level and implementation-agnostic:**
+- Focus on WHAT each domain does, not HOW it does it
+- Avoid mentioning specific libraries, tools, or implementation details
+- Don't document individual functions, classes, or files
+- Keep it brief - this is an overview, not detailed documentation
+
+FastAPI-Squillo is an AI-powered recipe import and educational platform that extracts recipes from social media and websites, analyzes cooking techniques, and provides personalized learning recommendations.
+
+### Core Domains
+
+**`src/core/`** - Application Infrastructure
+- Application configuration, dependency injection, and constants
+- Main FastAPI application entry point and router registration
+
+**`src/recipe_import_service/`** - Recipe Extraction
+- Imports recipes from TikTok, YouTube, Instagram, and generic websites
+- Platform-specific services with unified import endpoint
+- LLM-powered recipe text extraction from video content
+
+**`src/ai_recipe_engine/`** - Technique Analysis
+- Analyzes recipe text to extract structured cooking steps
+- Identifies and classifies cooking techniques using LLM and fuzzy matching
+- Maps techniques to standardized technique database
+
+**`src/educational_engine/`** - Learning Recommendations
+- Provides personalized technique recommendations based on user history
+- Tracks technique viewing progress and completion
+- Enforces prerequisite learning paths and difficulty progression
+
+**`src/database/`** - Data Persistence
+- In-memory database service for users and recipes
+- Thread-safe CRUD operations with async support
+- YAML-backed mock data for development
+
+**`src/shared/`** - Shared Services
+- **llm_service/** - Abstraction layer for multiple LLM providers (Mistral, Claude, Gemini)
+- **technique_service/** - Manages technique database loaded from YAML files
+
+**`src/util/`** - Utilities
+- Template formatting and helper functions
+
+### Supporting Directories
+
+**`techniques/`** - Technique Database
+- YAML files organized by cooking category (baking, frying, knife_skills, etc.)
+- Each technique includes description, difficulty, prerequisites, and educational resources
+
+**`resources/`** - Test Data
+- Mock users and recipes for development
+- Platform-specific test resources (TikTok, YouTube, Instagram)
+
+**`scripts/`** - Development Tools
+- Testing utilities and platform-specific download scripts
+
+### Request Flow
+
+**Recipe Import:** User URL → Platform detection → Recipe extraction → Technique analysis → Database storage
+
+**Learning Recommendation:** Recipe step → Technique identification → User history analysis → Prioritized recommendation

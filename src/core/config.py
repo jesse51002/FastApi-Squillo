@@ -2,8 +2,9 @@
 
 import logging
 import sys
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Auto-load environment variables from .env file
 load_dotenv()
@@ -40,7 +41,7 @@ class AppConfig(BaseSettings):
 
 
 # Global config instance
-settings = AppConfig()
+settings = AppConfig()  # pyright: ignore (Parameters are instantiated by env)
 
 
 def setup_logging(log_level: str | None = None) -> None:

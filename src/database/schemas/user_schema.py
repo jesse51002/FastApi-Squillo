@@ -1,10 +1,11 @@
 """User schema for database storage."""
 
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field, EmailStr, field_validator
 
-from src.database.schemas.recipe_schema import RecipeDisplayData
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 from src.database.database_utils import validate_user_id
+from src.database.schemas.recipe_schema import RecipeDisplayData
 
 
 class TechniqueWatchSession(BaseModel):
@@ -30,7 +31,9 @@ class TechniqueViewingInfo(BaseModel):
         default_factory=list,
         description="List of watch sessions with percentage and timestamp",
     )
-    skipped: bool = Field(False, description="Whether the technique video was skipped")
+    skipped: bool = Field(
+        default=False, description="Whether the technique video was skipped"
+    )
 
 
 class UserCreate(BaseModel):
