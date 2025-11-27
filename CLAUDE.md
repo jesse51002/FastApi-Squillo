@@ -43,11 +43,12 @@
 - Benefits: Easier to test, read, and maintain; follows Single Responsibility Principle
 
 **Type Hints**
-- Always use type hints for function parameters and return values
+- **MUST have type hints on ALL function parameters and return values**
 - Use native collections for Python 3.9+ (`list[str]`, `dict[str, int]`)
 - Use `Optional[T]` for nullable values
 - Use `Union` or `|` for multiple types
 - Create type aliases for complex types
+- No exceptions - even simple functions must have type hints
 
 **DateTime Handling**
 - **ALWAYS use UTC timezone for datetime fields**

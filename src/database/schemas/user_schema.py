@@ -60,9 +60,9 @@ class User(BaseModel):
         default_factory=list,
         description="List of recipe display data owned by this user",
     )
-    techniques_watched: list[TechniqueViewingInfo] = Field(
-        default_factory=list,
-        description="Detailed viewing information for technique videos",
+    techniques_watched: dict[str, TechniqueViewingInfo] = Field(
+        default_factory=dict,
+        description="Detailed viewing information for technique videos, keyed by technique_id",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -82,10 +82,6 @@ class UserResponse(BaseModel):
     user_id: str = Field(..., description="Unique identifier for the user")
     username: str = Field(..., description="Username for the user")
     email: EmailStr = Field(..., description="Email address for the user")
-    recipes: list[RecipeDisplayData] = Field(
-        default_factory=list,
-        description="List of recipe display data owned by this user",
-    )
     created_at: datetime = Field(..., description="Timestamp when the user was created")
 
     @field_validator("user_id")
@@ -93,3 +89,12 @@ class UserResponse(BaseModel):
     def _validate_user_id(cls, v: str) -> str:
         """Validate user_id format using shared validator."""
         return validate_user_id(v)
+
+
+class UserCreateResponse(BaseModel):
+    """Response schema for user creation operations."""
+
+    user_id: str = Field(..., description="Unique identifier for the created user")
+    username: str = Field(..., description="Username for the created user")
+    email: EmailStr = Field(..., description="Email address for the created user")
+    created_at: datetime = Field(..., description="Timestamp when the user was created")
