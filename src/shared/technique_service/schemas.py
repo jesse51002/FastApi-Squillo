@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
 from enum import IntEnum
 from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class TechniqueDifficulty(IntEnum):
@@ -24,7 +25,8 @@ class Technique(BaseModel):
         default_factory=list,
         description="Tips that can be used to fully understand the technique",
     )
-    image: str = Field("", description="Technique badge image")
+    image: str = Field("", description="Base technique image")
+    badge_image: Optional[str] = Field(None, description="Technique badge image")
     video_url: str = Field("", description="Technique video url")
     background_color: str = Field(
         "", description="Hex color of background for technique"

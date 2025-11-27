@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class TechniqueExtractionService:
     """Service for extracting cooking techniques from recipe text."""
 
-    EXTRACTION_TEMPLATE = str(Path(__file__).parent / "template.md")
+    EXTRACTION_TEMPLATE = Path(__file__).parent / "template.md"
 
     def __init__(
         self, llm_service: BaseLLMService, technique_service: TechniqueService

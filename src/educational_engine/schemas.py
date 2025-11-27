@@ -1,9 +1,8 @@
 """Educational engine schemas for technique recommendations."""
 
 from typing import Optional
-from pydantic import BaseModel, Field
 
-from src.shared.technique_service.schemas import Technique
+from pydantic import BaseModel, Field
 
 
 class TechniqueRecommendationRequest(BaseModel):
@@ -16,6 +15,17 @@ class TechniqueRecommendationRequest(BaseModel):
     )
 
 
+class SimplifiedTechnique(BaseModel):
+    """Simplified technique information for recommendations."""
+
+    id: str = Field(..., description="Technique ID")
+    name: str = Field(..., description="Technique name")
+    description: str = Field(..., description="Technique description")
+    video_url: str = Field(..., description="Technique video URL")
+    image: str = Field(..., description="Base technique image")
+    badge_image: Optional[str] = Field(None, description="Technique badge image")
+
+
 class TechniqueRecommendationResponse(BaseModel):
     """Response schema for technique recommendation.
 
@@ -23,13 +33,13 @@ class TechniqueRecommendationResponse(BaseModel):
     and their learning history.
     """
 
-    technique: Optional[Technique] = Field(
+    technique: Optional[SimplifiedTechnique] = Field(
         None,
         description=(
-            "Recommended technique for the step. " "None if step has no techniques."
+            "Recommended technique for the step. None if step has no techniques."
         ),
     )
-    prerequisite: Optional[Technique] = Field(
+    prerequisite: Optional[SimplifiedTechnique] = Field(
         None,
         description=(
             "Prerequisite technique that should be watched first. "
@@ -64,6 +74,3 @@ class MarkTechniqueWatchedResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the operation succeeded")
     message: str = Field(..., description="Success or error message")
-    total_watch_sessions: int = Field(
-        ..., description="Total count of watch sessions for this technique"
-    )

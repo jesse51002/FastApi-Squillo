@@ -2,13 +2,17 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, status, Depends
-from dependency_injector.wiring import inject, Provide
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.core.dependencies import DependencyManager
-from src.database.schemas.user_schema import UserCreate, UserResponse
-from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
 from src.database.database_service import DatabaseService
+from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
+from src.database.schemas.user_schema import (
+    UserCreate,
+    UserCreateResponse,
+    UserResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +23,8 @@ router = APIRouter(
 
 
 @router.post(
-    "/users",
-    response_model=UserResponse,
+    "/create-user",
+    response_model=UserCreateResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new user",
     description="Creates a new user in the database",
@@ -29,7 +33,7 @@ router = APIRouter(
 async def create_user(
     user_create: UserCreate,
     db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
-) -> UserResponse:
+) -> UserCreateResponse:
     """Create a new user.
 
     Args:
@@ -37,18 +41,17 @@ async def create_user(
         db_service: Injected database service
 
     Returns:
-        UserResponse with user details
+        UserCreateResponse with created user details
 
     Raises:
-        HTTPException: If user already exists or creation fails
+        HTTPException: If user creation fails
     """
     try:
         user = await db_service.save_user(user_create)
-        return UserResponse(
+        return UserCreateResponse(
             user_id=user.user_id,
             username=user.username,
             email=user.email,
-            recipes=user.recipes,
             created_at=user.created_at,
         )
     except ValueError as e:
@@ -97,7 +100,6 @@ async def get_user(
             user_id=user.user_id,
             username=user.username,
             email=user.email,
-            recipes=user.recipes,
             created_at=user.created_at,
         )
     except HTTPException:
