@@ -41,19 +41,27 @@ async def create_user(
         db_service: Injected database service
 
     Returns:
-        UserCreateResponse with success flag and optional error message
+        UserCreateResponse with created user details
 
     Raises:
-        HTTPException: Never raised - errors are returned in response
+        HTTPException: If user creation fails
     """
     try:
-        await db_service.save_user(user_create)
-        return UserCreateResponse(success=True)
+        user = await db_service.save_user(user_create)
+        return UserCreateResponse(
+            user_id=user.user_id,
+            username=user.username,
+            email=user.email,
+            created_at=user.created_at,
+        )
     except ValueError as e:
-        return UserCreateResponse(success=False, error=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
         logger.error("Failed to create user", exc_info=True)
-        return UserCreateResponse(success=False, error="Failed to create user")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user",
+        )
 
 
 @router.get(

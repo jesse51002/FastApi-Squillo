@@ -94,8 +94,7 @@ class UserResponse(BaseModel):
 class UserCreateResponse(BaseModel):
     """Response schema for user creation operations."""
 
-    success: bool = Field(..., description="Whether the user creation was successful")
-    error: str | None = Field(
-        default=None,
-        description="Error message if creation failed, None if successful",
-    )
+    user_id: str = Field(..., description="Unique identifier for the created user")
+    username: str = Field(..., description="Username for the created user")
+    email: EmailStr = Field(..., description="Email address for the created user")
+    created_at: datetime = Field(..., description="Timestamp when the user was created")
