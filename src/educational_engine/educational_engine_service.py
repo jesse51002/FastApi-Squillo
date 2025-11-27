@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime, timezone
 
+from src.ai_recipe_engine.schema import ExtractionRecipeStep
 from src.database.database_service import DatabaseService
 from src.database.schemas.user_schema import (
     TechniqueViewingInfo,
@@ -206,7 +207,7 @@ class EducationalEngineService:
             badge_image=technique.badge_image,
         )
 
-    def _find_step_by_number(self, steps, step_number: str):
+    def _find_step_by_number(self, steps: list[ExtractionRecipeStep], step_number: str):
         """Find a step by its step_number.
 
         Args:
