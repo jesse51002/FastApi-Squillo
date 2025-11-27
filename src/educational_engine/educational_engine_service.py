@@ -13,6 +13,7 @@ from src.educational_engine.schemas import (
     SimplifiedTechnique,
     TechniqueRecommendationResponse,
 )
+from src.shared.technique_service.schemas import Technique
 from src.shared.technique_service.technique_service import TechniqueService
 
 logger = logging.getLogger(__name__)
@@ -164,10 +165,13 @@ class EducationalEngineService:
             watch_time=datetime.now(timezone.utc),
         )
 
-        # Find or create viewing info for this technique
-        viewing_info = self._find_or_create_viewing_info(
-            user.techniques_watched, technique_id
-        )
+        # Get existing viewing info or create new one
+        if technique_id in user.techniques_watched:
+            viewing_info = user.techniques_watched[technique_id]
+        else:
+            # Create new viewing info and add to user's dict
+            viewing_info = TechniqueViewingInfo(technique_id=technique_id)
+            user.techniques_watched[technique_id] = viewing_info
 
         # Add watch session to history
         viewing_info.watch_history.append(watch_session)
@@ -176,7 +180,7 @@ class EducationalEngineService:
         if skipped:
             viewing_info.skipped = True
 
-        # Update user data
+        # Explicitly update user data with modified techniques_watched
         await self.database_service.update_user(user)
 
         return MarkTechniqueWatchedResponse(
@@ -184,7 +188,7 @@ class EducationalEngineService:
             message=f"Technique {technique_id} watch session recorded",
         )
 
-    def _convert_to_simplified(self, technique) -> SimplifiedTechnique:
+    def _convert_to_simplified(self, technique: Technique) -> SimplifiedTechnique:
         """Convert a full Technique to a SimplifiedTechnique.
 
         Args:
@@ -218,7 +222,7 @@ class EducationalEngineService:
         return None
 
     def _get_watched_technique_ids(
-        self, techniques_watched: list[TechniqueViewingInfo]
+        self, techniques_watched: dict[str, TechniqueViewingInfo]
     ) -> set[str]:
         """Extract technique IDs that have been watched.
 
@@ -226,39 +230,16 @@ class EducationalEngineService:
         session with >= 80% completion.
 
         Args:
-            techniques_watched: List of technique viewing information
+            techniques_watched: Dict of technique viewing information keyed by technique_id
 
         Returns:
             Set of technique IDs that have been watched
         """
         watched_ids = set()
-        for viewing_info in techniques_watched:
+        for technique_id, viewing_info in techniques_watched.items():
             # Check if any watch session reached 80% or more
             for session in viewing_info.watch_history:
                 if session.watched_percentage >= 80.0:
-                    watched_ids.add(viewing_info.technique_id)
+                    watched_ids.add(technique_id)
                     break
         return watched_ids
-
-    def _find_or_create_viewing_info(
-        self,
-        techniques_watched: list[TechniqueViewingInfo],
-        technique_id: str,
-    ) -> TechniqueViewingInfo:
-        """Find existing viewing info or create new one.
-
-        Args:
-            techniques_watched: List of technique viewing information
-            technique_id: ID of the technique to find or create
-
-        Returns:
-            The viewing info for the technique
-        """
-        for viewing_info in techniques_watched:
-            if viewing_info.technique_id == technique_id:
-                return viewing_info
-
-        # Create new viewing info
-        new_viewing_info = TechniqueViewingInfo(technique_id=technique_id)
-        techniques_watched.append(new_viewing_info)
-        return new_viewing_info

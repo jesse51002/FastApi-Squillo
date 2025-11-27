@@ -60,9 +60,9 @@ class User(BaseModel):
         default_factory=list,
         description="List of recipe display data owned by this user",
     )
-    techniques_watched: list[TechniqueViewingInfo] = Field(
-        default_factory=list,
-        description="Detailed viewing information for technique videos",
+    techniques_watched: dict[str, TechniqueViewingInfo] = Field(
+        default_factory=dict,
+        description="Detailed viewing information for technique videos, keyed by technique_id",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
