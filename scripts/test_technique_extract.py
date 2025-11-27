@@ -9,8 +9,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
-from src.core.dependencies import container
+from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService  # noqa
+from src.core.dependencies import container  # noqa
 
 
 async def main():
