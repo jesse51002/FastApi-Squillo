@@ -1,10 +1,10 @@
 """Service for loading and managing technique definitions from YAML files."""
 
-import yaml
 import logging
 import string
 
-from rapidfuzz import process, fuzz
+import yaml
+from rapidfuzz import fuzz, process
 
 from src.core.constants import TECHNIQUES_PATH
 from src.shared.technique_service.schemas import Technique
@@ -24,6 +24,29 @@ class TechniqueService:
         self.techniques: dict[str, Technique] = {}
         self._load_techniques()
         self._validate_techniques()
+
+    def _structure_technique(self, technique: Technique) -> Technique:
+        """Structure and validate technique, applying defaults where needed.
+
+        Args:
+            technique: The technique to structure
+
+        Returns:
+            Technique: The structured technique with defaults applied
+        """
+        # Check if badge_image is missing and set default with warning
+        # TODO: In the future, this should error out instead of using a default
+        if not technique.badge_image:
+            logger.warning(
+                f"Technique '{technique.name}' (id={technique.id}) is missing "
+                f"badge_image field. Using default badge image."
+            )
+            # Create a new technique with the default badge_image
+            technique = technique.model_copy(
+                update={"badge_image": "default_badge.png"}
+            )
+
+        return technique
 
     def _load_techniques(self) -> None:
         """Load all technique YAML files from the techniques directory.
@@ -50,6 +73,9 @@ class TechniqueService:
                     err_msg = f"Duplicate id in {self.techniques[technique.id].name} and {technique.name}"
                     logger.error(err_msg, exc_info=True)
                     raise Exception(err_msg)
+
+                # Structure technique with defaults and validation
+                technique = self._structure_technique(technique)
 
                 self.techniques[technique.id] = technique
 

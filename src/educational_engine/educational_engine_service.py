@@ -10,6 +10,7 @@ from src.database.schemas.user_schema import (
 )
 from src.educational_engine.schemas import (
     MarkTechniqueWatchedResponse,
+    SimplifiedTechnique,
     TechniqueRecommendationResponse,
 )
 from src.shared.technique_service.technique_service import TechniqueService
@@ -113,12 +114,15 @@ class EducationalEngineService:
         # Check for prerequisite
         prerequisite_technique = None
         if recommended_technique.prerequisite_video:
-            prerequisite_technique = all_techniques.get(
-                recommended_technique.prerequisite_video
-            )
+            prereq = all_techniques.get(recommended_technique.prerequisite_video)
+            if prereq:
+                prerequisite_technique = self._convert_to_simplified(prereq)
+
+        # Convert to simplified technique
+        simplified_technique = self._convert_to_simplified(recommended_technique)
 
         return TechniqueRecommendationResponse(
-            technique=recommended_technique,
+            technique=simplified_technique,
             prerequisite=prerequisite_technique,
             already_watched=already_watched,
         )
@@ -178,7 +182,24 @@ class EducationalEngineService:
         return MarkTechniqueWatchedResponse(
             success=True,
             message=f"Technique {technique_id} watch session recorded",
-            total_watch_sessions=len(viewing_info.watch_history),
+        )
+
+    def _convert_to_simplified(self, technique) -> SimplifiedTechnique:
+        """Convert a full Technique to a SimplifiedTechnique.
+
+        Args:
+            technique: Full Technique object
+
+        Returns:
+            SimplifiedTechnique with only essential fields
+        """
+        return SimplifiedTechnique(
+            id=technique.id,
+            name=technique.name,
+            description=technique.description,
+            video_url=technique.video_url,
+            image=technique.image,
+            badge_image=technique.badge_image,
         )
 
     def _find_step_by_number(self, steps, step_number: str):

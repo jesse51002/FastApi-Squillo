@@ -1,8 +1,22 @@
-import requests
-import time
+"""Test script for technique extraction service."""
 
-input_recipe = {
-    "recipe_text": """# Garlic Honey Chili Chicken
+import asyncio
+import sys
+import time
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
+from src.core.dependencies import container
+
+
+async def main():
+    """Test technique extraction service."""
+    recipe_text = """
+# Garlic Honey Chili Chicken
 
 Tender, juicy chicken with a perfect balance of sweet honey, spicy chili, and fragrant garlic. This marinade infuses the chicken with incredible flavor while keeping the meat moist and succulent. Perfect for grilling, baking, or pan-searing.
 
@@ -50,10 +64,18 @@ Garnish with sliced garlic, sesame seeds, and fresh cilantro or green onions for
 Serve hot with steamed rice, roasted vegetables, or a fresh salad.
 
 **Serves 4 | Prep time: 15 minutes | Marinating time: 2-12 hours | Cook time: 12-15 minutes**"""
-}
 
-start_time = time.time()
-response = requests.post("http://localhost:8000/v1/technique-extract", json=input_recipe)
-print(response.json())
+    # Get service from dependency container
+    service: TechniqueExtractionService = container.technique_extraction_service()
 
-print(f"\n\nFinished in {time.time() - start_time} seconds")
+    start_time = time.time()
+
+    # Call service directly
+    result = await service.extract_techniques(recipe_text)
+
+    print(result.model_dump_json(indent=2))
+    print(f"\n\nFinished in {time.time() - start_time:.2f} seconds")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
