@@ -74,3 +74,12 @@ class MarkTechniqueWatchedResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the operation succeeded")
     message: str = Field(..., description="Success or error message")
+
+
+class TechniquesWatchedResponse(BaseModel):
+    """Response schema for listing watched techniques."""
+
+    techniques: list[str] = Field(
+        ...,
+        description="List of watched techniques",
+    )

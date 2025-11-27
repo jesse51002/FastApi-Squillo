@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from typing import Optional
 
 import yaml
 
@@ -90,7 +89,7 @@ class DatabaseService:
             logger.error(f"Failed to load mock data: {e}", exc_info=True)
             raise
 
-    async def get_user(self, user_id: str) -> Optional[User]:
+    async def get_user(self, user_id: str) -> User:
         """Retrieve a user by their ID.
 
         Args:
@@ -99,8 +98,13 @@ class DatabaseService:
         Returns:
             User object if found, None otherwise
         """
+
+        if user_id not in self._users:
+            logger.error(f"User {user_id} not found")
+            raise ValueError(f"User with ID '{user_id}' not found")
+
         async with self._lock:
-            return self._users.get(user_id)
+            return self._users[user_id]
 
     async def save_user(self, user_create: UserCreate) -> User:
         """Create and save a new user.
@@ -139,10 +143,11 @@ class DatabaseService:
         Raises:
             ValueError: If the user doesn't exist
         """
-        async with self._lock:
-            if user.user_id not in self._users:
-                raise ValueError(f"User with ID '{user.user_id}' not found")
 
+        if user.user_id not in self._users:
+            raise ValueError(f"User with ID '{user.user_id}' not found")
+
+        async with self._lock:
             self._users[user.user_id] = user
             return user
 
@@ -228,7 +233,7 @@ class DatabaseService:
                 raise ValueError(f"User with ID '{user_id}' not found")
             return user.recipes
 
-    async def get_recipe(self, recipe_id: str) -> Optional[StoredRecipe]:
+    async def get_recipe(self, recipe_id: str) -> StoredRecipe:
         """Retrieve a specific recipe by its ID.
 
         Args:
@@ -237,5 +242,10 @@ class DatabaseService:
         Returns:
             StoredRecipe object if found, None otherwise
         """
+
+        if recipe_id not in self._recipes:
+            logger.error(f"Recipe {recipe_id} not found")
+            raise ValueError(f"Recipe with ID '{recipe_id}' not found")
+
         async with self._lock:
-            return self._recipes.get(recipe_id)
+            return self._recipes[recipe_id]

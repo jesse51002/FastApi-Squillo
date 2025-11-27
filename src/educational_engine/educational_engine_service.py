@@ -89,7 +89,7 @@ class EducationalEngineService:
         technique_ids = [tech.id for tech in sorted_techniques]
 
         # Get watched technique IDs for this user
-        watched_ids = self._get_watched_technique_ids(user.techniques_watched)
+        watched_ids = self.get_learned_technique_ids(user.techniques_watched)
 
         # Filter unwatched techniques
         unwatched_ids = [tid for tid in technique_ids if tid not in watched_ids]
@@ -160,12 +160,6 @@ class EducationalEngineService:
         if technique_id not in all_techniques:
             raise ValueError(f"Technique {technique_id} not found")
 
-        # Create watch session
-        watch_session = TechniqueWatchSession(
-            watched_percentage=watched_percentage,
-            watch_time=datetime.now(timezone.utc),
-        )
-
         # Get existing viewing info or create new one
         if technique_id in user.techniques_watched:
             viewing_info = user.techniques_watched[technique_id]
@@ -174,12 +168,16 @@ class EducationalEngineService:
             viewing_info = TechniqueViewingInfo(technique_id=technique_id)
             user.techniques_watched[technique_id] = viewing_info
 
-        # Add watch session to history
-        viewing_info.watch_history.append(watch_session)
-
-        # Update skipped flag if provided
         if skipped:
-            viewing_info.skipped = True
+            if viewing_info.skipped:
+                logger.warning(f"Technique {technique_id} already skipped")
+            viewing_info.skipped = skipped
+        else:
+            watch_session = TechniqueWatchSession(
+                watched_percentage=watched_percentage,
+                watch_time=datetime.now(timezone.utc),
+            )
+            viewing_info.watch_history.append(watch_session)
 
         # Explicitly update user data with modified techniques_watched
         await self.database_service.update_user(user)
@@ -222,7 +220,7 @@ class EducationalEngineService:
                 return step
         return None
 
-    def _get_watched_technique_ids(
+    def get_learned_technique_ids(
         self, techniques_watched: dict[str, TechniqueViewingInfo]
     ) -> set[str]:
         """Extract technique IDs that have been watched.
@@ -238,9 +236,7 @@ class EducationalEngineService:
         """
         watched_ids = set()
         for technique_id, viewing_info in techniques_watched.items():
-            # Check if any watch session reached 80% or more
-            for session in viewing_info.watch_history:
-                if session.watched_percentage >= 80.0:
-                    watched_ids.add(technique_id)
-                    break
+            if viewing_info.skipped or len(viewing_info.watch_history) > 0:
+                watched_ids.add(technique_id)
+
         return watched_ids
