@@ -11,8 +11,8 @@ from src.ai_recipe_engine.schema import (
     TechniqueExtractionResponse,
 )
 from src.shared.llm_service.base import BaseLLMService
-from src.shared.technique_service.schemas import Technique
-from src.shared.technique_service.technique_service import TechniqueService
+from src.technique_service.schemas import Technique
+from src.technique_service.technique_service import TechniqueService
 from src.util.template_formatter import TemplateFormatter
 
 logger = logging.getLogger(__name__)

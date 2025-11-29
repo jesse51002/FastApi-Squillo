@@ -1,9 +1,10 @@
 """Pydantic schemas for technique extraction API."""
 
-from pydantic import BaseModel, Field
 from enum import IntEnum
 
-from src.shared.technique_service.schemas import TechniqueDifficulty
+from pydantic import BaseModel, Field
+
+from src.technique_service.schemas import TechniqueDifficulty
 
 
 class TechniqueExtractionRequest(BaseModel):

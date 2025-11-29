@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from typing import Optional
 
 import yaml
 
@@ -34,8 +33,7 @@ class DatabaseService:
 
         Note: Storage is class-level, so all instances share the same data.
         """
-        if self._lock is None:
-            self.__class__._lock = asyncio.Lock()
+        self.__class__._lock = asyncio.Lock()
         self._load_mock_data()
 
     def _load_mock_data(self) -> None:
@@ -90,7 +88,7 @@ class DatabaseService:
             logger.error(f"Failed to load mock data: {e}", exc_info=True)
             raise
 
-    async def get_user(self, user_id: str) -> Optional[User]:
+    async def get_user(self, user_id: str) -> User:
         """Retrieve a user by their ID.
 
         Args:
@@ -99,8 +97,13 @@ class DatabaseService:
         Returns:
             User object if found, None otherwise
         """
+
+        if user_id not in self._users:
+            logger.error(f"User {user_id} not found")
+            raise ValueError(f"User with ID '{user_id}' not found")
+
         async with self._lock:
-            return self._users.get(user_id)
+            return self._users[user_id]
 
     async def save_user(self, user_create: UserCreate) -> User:
         """Create and save a new user.
@@ -139,10 +142,11 @@ class DatabaseService:
         Raises:
             ValueError: If the user doesn't exist
         """
-        async with self._lock:
-            if user.user_id not in self._users:
-                raise ValueError(f"User with ID '{user.user_id}' not found")
 
+        if user.user_id not in self._users:
+            raise ValueError(f"User with ID '{user.user_id}' not found")
+
+        async with self._lock:
             self._users[user.user_id] = user
             return user
 
@@ -208,6 +212,7 @@ class DatabaseService:
             thumbnail_url=recipe.thumbnail_url,
             difficulty=recipe.difficulty,
             technique_ids=list(technique_ids),
+            created_at=recipe.created_at,
         )
 
     async def get_all_recipes_from_user(self, user_id: str) -> list[RecipeDisplayData]:
@@ -228,7 +233,7 @@ class DatabaseService:
                 raise ValueError(f"User with ID '{user_id}' not found")
             return user.recipes
 
-    async def get_recipe(self, recipe_id: str) -> Optional[StoredRecipe]:
+    async def get_recipe(self, recipe_id: str) -> StoredRecipe:
         """Retrieve a specific recipe by its ID.
 
         Args:
@@ -237,5 +242,55 @@ class DatabaseService:
         Returns:
             StoredRecipe object if found, None otherwise
         """
+
+        if recipe_id not in self._recipes:
+            logger.error(f"Recipe {recipe_id} not found")
+            raise ValueError(f"Recipe with ID '{recipe_id}' not found")
+
         async with self._lock:
-            return self._recipes.get(recipe_id)
+            return self._recipes[recipe_id]
+
+    async def update_ingredient_checked(
+        self, recipe_id: str, user_id: str, ingredient_name: str, checked: bool
+    ) -> StoredRecipe:
+        """Update the checked status of an ingredient in a recipe.
+
+        Args:
+            recipe_id: The unique identifier of the recipe
+            user_id: The ID of the user who owns the recipe
+            ingredient_name: The name of the ingredient to update
+            checked: The new checked status
+
+        Returns:
+            The updated StoredRecipe object
+
+        Raises:
+            ValueError: If recipe not found, user doesn't own recipe, or ingredient not found
+        """
+        async with self._lock:
+            # Verify recipe exists
+            if recipe_id not in self._recipes:
+                raise ValueError(f"Recipe with ID '{recipe_id}' not found")
+
+            recipe = self._recipes[recipe_id]
+
+            # Verify user owns the recipe
+            if recipe.user_id != user_id:
+                raise ValueError(
+                    f"Recipe '{recipe_id}' does not belong to user '{user_id}'"
+                )
+
+            # Find and update the ingredient
+            ingredient_found = False
+            for ingredient in recipe.ingredients:
+                if ingredient.name.lower() == ingredient_name.lower():
+                    ingredient.checked = checked
+                    ingredient_found = True
+                    break
+
+            if not ingredient_found:
+                raise ValueError(
+                    f"Ingredient '{ingredient_name}' not found in recipe '{recipe_id}'"
+                )
+
+            return recipe

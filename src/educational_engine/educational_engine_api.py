@@ -2,18 +2,20 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, status, Depends
-from dependency_injector.wiring import inject, Provide
+from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.core.dependencies import DependencyManager
-from src.educational_engine.schemas import (
-    TechniqueRecommendationRequest,
-    TechniqueRecommendationResponse,
-    MarkTechniqueWatchedRequest,
-    MarkTechniqueWatchedResponse,
-)
+from src.database.database_service import DatabaseService
 from src.educational_engine.educational_engine_service import (
     EducationalEngineService,
+)
+from src.educational_engine.schemas import (
+    MarkTechniqueWatchedRequest,
+    MarkTechniqueWatchedResponse,
+    TechniqueRecommendationRequest,
+    TechniqueRecommendationResponse,
+    TechniquesWatchedResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -116,4 +118,53 @@ async def mark_technique_watched(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to mark technique as watched",
+        )
+
+
+@router.get(
+    "/learned_techniques/{user_id}",
+    response_model=TechniquesWatchedResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get learned techniques for a user",
+    description=("Get list of watched techniques ids for a user"),
+)
+@inject
+async def learned_techniques(
+    user_id: str,
+    database_service: DatabaseService = Depends(
+        Provide[DependencyManager.database_service]
+    ),
+    educational_service: EducationalEngineService = Depends(
+        Provide[DependencyManager.educational_engine_service]
+    ),
+) -> TechniquesWatchedResponse:
+    """Get list of watched techniques ids for a user
+
+    Args:
+        user_id: Contains user_id to get learned techniques for
+        database_service: Injected database engine service
+        educational_service: Injected educational engine service
+
+    Returns:
+        TechniquesWatchedResponse: A list of watched techniques ids for a user
+
+    Raises:
+        HTTPException: If user not found
+    """
+    try:
+        user = await database_service.get_user(user_id=user_id)
+
+        learned_technique_id_list = educational_service.get_learned_technique_ids(
+            techniques_watched=user.techniques_watched
+        )
+
+        return TechniquesWatchedResponse(techniques=list(learned_technique_id_list))
+
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception:
+        logger.error("Failed to get techniques user watched", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get techniques user watched",
         )

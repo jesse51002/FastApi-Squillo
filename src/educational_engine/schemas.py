@@ -4,6 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from src.technique_service.schemas import SimplifiedTechnique
+
 
 class TechniqueRecommendationRequest(BaseModel):
     """Request schema for getting technique recommendation."""
@@ -13,17 +15,6 @@ class TechniqueRecommendationRequest(BaseModel):
     step_number: str = Field(
         ..., description="Step number in the recipe (can be decimal like 1.1)"
     )
-
-
-class SimplifiedTechnique(BaseModel):
-    """Simplified technique information for recommendations."""
-
-    id: str = Field(..., description="Technique ID")
-    name: str = Field(..., description="Technique name")
-    description: str = Field(..., description="Technique description")
-    video_url: str = Field(..., description="Technique video URL")
-    image: str = Field(..., description="Base technique image")
-    badge_image: Optional[str] = Field(None, description="Technique badge image")
 
 
 class TechniqueRecommendationResponse(BaseModel):
@@ -74,3 +65,12 @@ class MarkTechniqueWatchedResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the operation succeeded")
     message: str = Field(..., description="Success or error message")
+
+
+class TechniquesWatchedResponse(BaseModel):
+    """Response schema for listing watched techniques."""
+
+    techniques: list[str] = Field(
+        ...,
+        description="List of watched techniques",
+    )

@@ -10,14 +10,14 @@ from pathlib import Path
 # Add src to path so we can import modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.shared.technique_service.technique_service import TechniqueService
+from src.technique_service.technique_service import TechniqueService
 
 
 def print_test_header(test_name: str) -> None:
     """Print a formatted test header."""
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"TEST: {test_name}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 def test_case(
@@ -52,9 +52,9 @@ def test_case(
 
 def main() -> None:
     """Run all fuzzy matching tests."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("FUZZY MATCHING FALLBACK LOGIC TEST SUITE")
-    print("="*70)
+    print("=" * 70)
 
     # Initialize the technique service
     service = TechniqueService()
@@ -210,9 +210,9 @@ def main() -> None:
     )
 
     # Summary
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST SUITE COMPLETE")
-    print("="*70)
+    print("=" * 70)
     print("\nKey Observations:")
     print("  - Fuzzy matching is case-insensitive for names")
     print("  - Fuzzy matching ignores punctuation in names")

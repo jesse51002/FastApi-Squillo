@@ -12,6 +12,39 @@ class TechniqueDifficulty(IntEnum):
     expert = 5
 
 
+class SimplifiedTechnique(BaseModel):
+    """Simplified technique information for recommendations."""
+
+    id: str = Field(..., description="Technique ID")
+    name: str = Field(..., description="Technique name")
+    description: str = Field(..., description="Technique description")
+    video_url: str = Field(..., description="Technique video URL")
+    image: str = Field(..., description="Base technique image")
+    badge_image: Optional[str] = Field(None, description="Technique badge image")
+    background_color: str = Field(
+        default="#B1C4E2", description="Hex color of background for technique"
+    )
+
+
+class BatchTechniquesRequest(BaseModel):
+    """Request schema for batch technique retrieval."""
+
+    technique_ids: list[str] = Field(
+        ...,
+        description="List of technique IDs to retrieve",
+        min_length=1,
+    )
+
+
+class BatchTechniquesResponse(BaseModel):
+    """Response schema for batch technique retrieval."""
+
+    techniques: list[SimplifiedTechnique] = Field(
+        ...,
+        description="List of simplified techniques",
+    )
+
+
 class Technique(BaseModel):
     """Response schema for technique extraction."""
 
@@ -25,11 +58,14 @@ class Technique(BaseModel):
         default_factory=list,
         description="Tips that can be used to fully understand the technique",
     )
-    image: str = Field("", description="Base technique image")
+    image: str = Field(
+        "https://drive.google.com/uc?export=download&id=1EBNx0AQZdndF-6tfct4_w_kp90Ad009M",
+        description="Base technique image",
+    )
     badge_image: Optional[str] = Field(None, description="Technique badge image")
     video_url: str = Field("", description="Technique video url")
     background_color: str = Field(
-        "", description="Hex color of background for technique"
+        "#000000", description="Hex color of background for technique"
     )
     restrict_classification: bool = Field(
         False,

@@ -7,7 +7,7 @@ import yaml
 from rapidfuzz import fuzz, process
 
 from src.core.constants import TECHNIQUES_PATH
-from src.shared.technique_service.schemas import Technique
+from src.technique_service.schemas import Technique
 
 logger = logging.getLogger(__file__)
 
@@ -152,6 +152,32 @@ class TechniqueService:
             Dictionary mapping technique names to Technique objects.
         """
         return self.techniques
+
+    def get_techniques_by_ids(self, technique_ids: list[str]) -> list[Technique]:
+        """Get multiple techniques by their IDs.
+
+        Args:
+            technique_ids: List of technique IDs to retrieve
+
+        Returns:
+            list[Technique]: List of techniques matching the provided IDs
+
+        Raises:
+            ValueError: If any technique ID is not found
+        """
+        techniques: list[Technique] = []
+        missing_ids: list[str] = []
+
+        for technique_id in technique_ids:
+            if technique_id in self.techniques:
+                techniques.append(self.techniques[technique_id])
+            else:
+                missing_ids.append(technique_id)
+
+        if missing_ids:
+            raise ValueError(f"Technique IDs not found: {', '.join(missing_ids)}")
+
+        return techniques
 
     def _normalize_string(self, text: str) -> str:
         """Normalize a string for fuzzy matching by lowercasing and removing punctuation.
