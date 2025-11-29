@@ -1,25 +1,24 @@
 """Instagram import service for extracting recipes from Instagram videos."""
 
-import re
 import json
-from typing import Optional
-from pathlib import Path
-from typing import Tuple
 import logging
+import re
+from pathlib import Path
+from typing import Optional, Tuple
+
 import httpx
 
-from src.shared.llm_service.mistral import MistralService, MistralModels
+from src.core.config import settings
 from src.recipe_import_service.schemas.instagram_schema import (
-    InstagramResponse,
     InstagramEnsembleParams,
+    InstagramResponse,
 )
 from src.recipe_import_service.services.base_import_service import BaseImportService
 from src.recipe_import_service.services.media_utils import (
-    extract_audio_from_video,
     download_video,
+    extract_audio_from_video,
 )
-from src.core.config import settings
-
+from src.shared.llm_service.mistral import MistralModels
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +31,6 @@ class InstagramImportService(BaseImportService):
         Path(__file__).parent.parent / "templates" / "audio_recipe_template.md"
     )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/instagram/post/details"
-
-    def __init__(self, mistral_service: MistralService):
-        """Initialize Instagram import service.
-
-        Args:
-            mistral_service: Mistral LLM service for recipe extraction
-        """
-        self.mistral_service = mistral_service
 
     async def _url_to_text_recipe(
         self, url: str, mock: bool = False
@@ -64,9 +55,11 @@ class InstagramImportService(BaseImportService):
         """
         # Step 1: Download video and get description + thumbnail
         if mock:
-            description, video_file, thumbnail_url = (
-                await self._download_instagram_mock(url)
-            )
+            (
+                description,
+                video_file,
+                thumbnail_url,
+            ) = await self._download_instagram_mock(url)
         else:
             description, video_file, thumbnail_url = await self._download_instagram(url)
 

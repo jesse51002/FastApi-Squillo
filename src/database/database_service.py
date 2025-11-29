@@ -7,7 +7,12 @@ import yaml
 
 from src.core.constants import MOCK_DATA_PATH
 from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
-from src.database.schemas.user_schema import User, UserCreate
+from src.database.schemas.user_schema import (
+    LoadingRecipe,
+    LoadingStatus,
+    User,
+    UserCreate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -294,3 +299,92 @@ class DatabaseService:
                 )
 
             return recipe
+
+    async def add_loading_recipe(
+        self, user_id: str, loading_recipe: LoadingRecipe
+    ) -> None:
+        """Add a recipe to user's loading_recipes dict.
+
+        Args:
+            user_id: The ID of the user
+            loading_recipe: The LoadingRecipe object to add
+
+        Raises:
+            ValueError: If the user doesn't exist
+        """
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            if loading_recipe.recipe_id in user.loading_recipes:
+                raise ValueError(
+                    f"Recipe with ID '{loading_recipe.recipe_id}' already exists in user's loading_recipes"
+                )
+
+            user.loading_recipes[loading_recipe.recipe_id] = loading_recipe
+
+    async def remove_loading_recipe(self, user_id: str, recipe_id: str) -> None:
+        """Remove a recipe from user's loading_recipes dict.
+
+        Args:
+            user_id: The ID of the user
+            recipe_id: The ID of the recipe to remove
+
+        Raises:
+            ValueError: If the user doesn't exist
+        """
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            user.loading_recipes.pop(recipe_id, None)
+
+    async def update_loading_recipe_status(
+        self, user_id: str, recipe_id: str, status: LoadingStatus
+    ) -> None:
+        """Update the status of a loading recipe.
+
+        Args:
+            user_id: The ID of the user
+            recipe_id: The ID of the recipe to update
+            status: The new status value
+
+        Raises:
+            ValueError: If the user or loading recipe doesn't exist
+        """
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            loading_recipe = user.loading_recipes.get(recipe_id)
+            if not loading_recipe:
+                raise ValueError(
+                    f"Loading recipe with ID '{recipe_id}' not found for user '{user_id}'"
+                )
+
+            loading_recipe.status = status
+
+    async def get_loading_recipe(
+        self, user_id: str, recipe_id: str
+    ) -> LoadingRecipe | None:
+        """Get a loading recipe by recipe_id.
+
+        Args:
+            user_id: The ID of the user
+            recipe_id: The ID of the recipe to retrieve
+
+        Returns:
+            LoadingRecipe if found, None otherwise
+
+        Raises:
+            ValueError: If the user doesn't exist
+        """
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            return user.loading_recipes.get(recipe_id)

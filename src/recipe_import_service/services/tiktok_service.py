@@ -1,36 +1,31 @@
 import json
-from typing import Optional
-from pathlib import Path
-from typing import Tuple
 import logging
+from pathlib import Path
+from typing import Optional, Tuple
+
 import httpx
 
-from src.shared.llm_service.mistral import MistralService, MistralModels
+from src.core.config import settings
 from src.recipe_import_service.schemas.tiktok_schema import (
-    TikTokScrapeResponse,
     EnsembleApiParams,
+    TikTokScrapeResponse,
 )
 from src.recipe_import_service.services.base_import_service import BaseImportService
 from src.recipe_import_service.services.media_utils import (
-    extract_audio_from_video,
     download_video,
+    extract_audio_from_video,
 )
-from src.core.config import settings
-
+from src.shared.llm_service.mistral import MistralModels
 
 logger = logging.getLogger(__name__)
 
 
 class TiktokImportService(BaseImportService):
-
     MODEL = MistralModels.voxtral_small
     TEMPLATE_PATH = (
         Path(__file__).parent.parent / "templates" / "audio_recipe_template.md"
     )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/tt/post/info"
-
-    def __init__(self, mistral_service: MistralService):
-        self.mistral_service = mistral_service
 
     async def _url_to_text_recipe(
         self, url: str, mock: bool = False

@@ -1,19 +1,19 @@
 """Web recipe import service for extracting recipes from recipe websites."""
 
-from bs4 import BeautifulSoup, Comment
-import httpx
 import json
-from typing import Optional
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import Optional
+
+import httpx
+from bs4 import BeautifulSoup, Comment
 from recipe_scrapers import scrape_html
 
-from src.shared.llm_service.mistral import MistralService, MistralModels
-from src.recipe_import_service.schemas.web_recipe_schema import WebRecipeData
 from src.recipe_import_service.schemas.import_schema import LlmOutputFormat
+from src.recipe_import_service.schemas.web_recipe_schema import WebRecipeData
 from src.recipe_import_service.services.base_import_service import BaseImportService
+from src.shared.llm_service.mistral import MistralModels
 from src.util.template_formatter import TemplateFormatter
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +31,8 @@ class WebRecipeService(BaseImportService):
         Path(__file__).parent.parent / "templates" / "web_recipe_template.md"
     )
 
-    def __init__(self, mistral_service: MistralService):
-        """Initialize web recipe import service.
-
-        Args:
-            mistral_service: Mistral LLM service for recipe extraction fallback
-        """
-        self.mistral_service = mistral_service
-
     async def _url_to_text_recipe(
-        self, url: str, mock: bool
+        self, url: str, mock: bool = False
     ) -> tuple[Optional[str], Optional[str]]:
         """Extract and create a recipe from a recipe website URL.
 
@@ -108,7 +100,6 @@ class WebRecipeService(BaseImportService):
             WebRecipeData model with extracted recipe information, or None if extraction fails
         """
         try:
-
             # Use recipe-scrapers to extract structured data
             scraper = scrape_html(html=html_content, org_url=url)
 
