@@ -33,8 +33,7 @@ class DatabaseService:
 
         Note: Storage is class-level, so all instances share the same data.
         """
-        if self._lock is None:
-            self.__class__._lock = asyncio.Lock()
+        self.__class__._lock = asyncio.Lock()
         self._load_mock_data()
 
     def _load_mock_data(self) -> None:
@@ -213,6 +212,7 @@ class DatabaseService:
             thumbnail_url=recipe.thumbnail_url,
             difficulty=recipe.difficulty,
             technique_ids=list(technique_ids),
+            created_at=recipe.created_at,
         )
 
     async def get_all_recipes_from_user(self, user_id: str) -> list[RecipeDisplayData]:
@@ -249,3 +249,48 @@ class DatabaseService:
 
         async with self._lock:
             return self._recipes[recipe_id]
+
+    async def update_ingredient_checked(
+        self, recipe_id: str, user_id: str, ingredient_name: str, checked: bool
+    ) -> StoredRecipe:
+        """Update the checked status of an ingredient in a recipe.
+
+        Args:
+            recipe_id: The unique identifier of the recipe
+            user_id: The ID of the user who owns the recipe
+            ingredient_name: The name of the ingredient to update
+            checked: The new checked status
+
+        Returns:
+            The updated StoredRecipe object
+
+        Raises:
+            ValueError: If recipe not found, user doesn't own recipe, or ingredient not found
+        """
+        async with self._lock:
+            # Verify recipe exists
+            if recipe_id not in self._recipes:
+                raise ValueError(f"Recipe with ID '{recipe_id}' not found")
+
+            recipe = self._recipes[recipe_id]
+
+            # Verify user owns the recipe
+            if recipe.user_id != user_id:
+                raise ValueError(
+                    f"Recipe '{recipe_id}' does not belong to user '{user_id}'"
+                )
+
+            # Find and update the ingredient
+            ingredient_found = False
+            for ingredient in recipe.ingredients:
+                if ingredient.name.lower() == ingredient_name.lower():
+                    ingredient.checked = checked
+                    ingredient_found = True
+                    break
+
+            if not ingredient_found:
+                raise ValueError(
+                    f"Ingredient '{ingredient_name}' not found in recipe '{recipe_id}'"
+                )
+
+            return recipe

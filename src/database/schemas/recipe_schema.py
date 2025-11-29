@@ -2,11 +2,21 @@
 
 from datetime import datetime, timezone
 from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
-from src.ai_recipe_engine.schema import TechniqueExtractionResponse
-from src.ai_recipe_engine.schema import RecipeDifficulty
+from src.ai_recipe_engine.schema import (
+    ExtractionIngredient,
+    RecipeDifficulty,
+    TechniqueExtractionResponse,
+)
 from src.database.database_utils import validate_recipe_id, validate_user_id
+
+
+class StoreIngredient(ExtractionIngredient):
+    checked: bool = Field(
+        default=False, description="Whether the ingredient has been checked"
+    )
 
 
 class StoredRecipe(TechniqueExtractionResponse):
@@ -27,12 +37,31 @@ class StoredRecipe(TechniqueExtractionResponse):
         default=None, description="Original URL where the recipe was imported from"
     )
     thumbnail_url: Optional[str] = Field(
-        default=None, description="URL to the recipe thumbnail image"
+        default="https://plus.unsplash.com/premium_photo-1694547926001-f2151e4a476b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Zm9vZCUyMHBob3RvZ3JhcGh5fGVufDB8fDB8fHww",
+        description="URL to the recipe thumbnail image",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Recipe creation time",
     )
+    ingredients: list[StoreIngredient] = Field(  # pyright: ignore
+        ..., description="List of ingredients needed for the recipe"
+    )
+
+    @field_validator("recipe_id")
+    @classmethod
+    def _validate_recipe_id(cls, v: str) -> str:
+        """Validate recipe_id format using shared validator."""
+        return validate_recipe_id(v)
+
+
+class UpdateIngredientCheckedRequest(BaseModel):
+    """Request schema for updating ingredient checked status."""
+
+    recipe_id: str = Field(..., description="Unique identifier for the recipe")
+    user_id: str = Field(..., description="ID of the user who owns the recipe")
+    ingredient_name: str = Field(..., description="Name of the ingredient to update")
+    checked: bool = Field(..., description="New checked status for the ingredient")
 
     @field_validator("recipe_id")
     @classmethod
@@ -45,6 +74,15 @@ class StoredRecipe(TechniqueExtractionResponse):
     def _validate_user_id(cls, v: str) -> str:
         """Validate user_id format using shared validator."""
         return validate_user_id(v)
+
+
+class UpdateIngredientCheckedResponse(BaseModel):
+    """Response schema for updating ingredient checked status."""
+
+    success: bool = Field(..., description="Whether the update was successful")
+    message: str = Field(..., description="Success or error message")
+    ingredient_name: str = Field(..., description="Name of the updated ingredient")
+    checked: bool = Field(..., description="New checked status")
 
 
 class RecipeDisplayData(BaseModel):
@@ -60,12 +98,16 @@ class RecipeDisplayData(BaseModel):
         default=None, description="URL to the recipe thumbnail image"
     )
     difficulty: RecipeDifficulty = Field(
-        default=None,
+        ...,
         description="Overall recipe difficulty based on the most difficult technique used",
     )
     technique_ids: list[str] = Field(
         default_factory=list,
         description="List of technique IDs used in this recipe",
+    )
+    created_at: datetime = Field(
+        ...,
+        description="Recipe creation time",
     )
 
     @field_validator("recipe_id")

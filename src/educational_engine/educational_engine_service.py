@@ -11,11 +11,10 @@ from src.database.schemas.user_schema import (
 )
 from src.educational_engine.schemas import (
     MarkTechniqueWatchedResponse,
-    SimplifiedTechnique,
     TechniqueRecommendationResponse,
 )
-from src.shared.technique_service.schemas import Technique
-from src.shared.technique_service.technique_service import TechniqueService
+from src.technique_service.schemas import SimplifiedTechnique, Technique
+from src.technique_service.technique_service import TechniqueService
 
 logger = logging.getLogger(__name__)
 

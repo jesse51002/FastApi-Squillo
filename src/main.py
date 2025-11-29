@@ -10,6 +10,9 @@ from src.educational_engine.educational_engine_api import (
     router as educational_router,
 )
 from src.recipe_import_service.recipe_import_api import router as import_router
+from src.technique_service.technique_service_api import (
+    router as technique_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -40,6 +43,7 @@ def create_app() -> FastAPI:
             "src.recipe_import_service.recipe_import_api",
             "src.database.database_api",
             "src.educational_engine.educational_engine_api",
+            "src.technique_service.technique_service_api",
         ]
     )
 
@@ -47,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(import_router)
     app.include_router(database_router)
     app.include_router(educational_router)
+    app.include_router(technique_router)
 
     return app
 

@@ -7,7 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.core.dependencies import DependencyManager
 from src.database.database_service import DatabaseService
-from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
+from src.database.schemas.recipe_schema import (
+    RecipeDisplayData,
+    StoredRecipe,
+    UpdateIngredientCheckedRequest,
+    UpdateIngredientCheckedResponse,
+)
 from src.database.schemas.user_schema import (
     UserCreate,
     UserCreateResponse,
@@ -191,4 +196,57 @@ async def get_recipe(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve recipe",
+        )
+
+
+@router.post(
+    "/update-checked",
+    response_model=UpdateIngredientCheckedResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update ingredient checked status",
+    description=(
+        "Updates the checked status of an ingredient in a recipe. "
+        "User must own the recipe to update it."
+    ),
+)
+@inject
+async def update_ingredient_checked(
+    request: UpdateIngredientCheckedRequest,
+    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
+) -> UpdateIngredientCheckedResponse:
+    """Update the checked status of an ingredient.
+
+    Args:
+        request: Request containing recipe_id, user_id, ingredient_name, and checked status
+        db_service: Injected database service
+
+    Returns:
+        UpdateIngredientCheckedResponse with success status and details
+
+    Raises:
+        HTTPException: If recipe not found, user doesn't own recipe, or ingredient not found
+    """
+    try:
+        await db_service.update_ingredient_checked(
+            recipe_id=request.recipe_id,
+            user_id=request.user_id,
+            ingredient_name=request.ingredient_name,
+            checked=request.checked,
+        )
+
+        return UpdateIngredientCheckedResponse(
+            success=True,
+            message=f"Ingredient '{request.ingredient_name}' checked status updated successfully",
+            ingredient_name=request.ingredient_name,
+            checked=request.checked,
+        )
+
+    except ValueError as e:
+        logger.error("Update ingredient checked failed", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception:
+        logger.error("Update ingredient checked failed", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update ingredient checked status",
         )

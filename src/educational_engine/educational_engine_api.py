@@ -123,7 +123,7 @@ async def mark_technique_watched(
 
 @router.get(
     "/learned_techniques/{user_id}",
-    response_model=MarkTechniqueWatchedResponse,
+    response_model=TechniquesWatchedResponse,
     status_code=status.HTTP_200_OK,
     summary="Get learned techniques for a user",
     description=("Get list of watched techniques ids for a user"),
@@ -138,7 +138,7 @@ async def learned_techniques(
         Provide[DependencyManager.educational_engine_service]
     ),
 ) -> TechniquesWatchedResponse:
-    """Mark a technique as watched with viewing details.
+    """Get list of watched techniques ids for a user
 
     Args:
         user_id: Contains user_id to get learned techniques for

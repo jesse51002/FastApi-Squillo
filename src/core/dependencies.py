@@ -2,21 +2,21 @@
 
 from dependency_injector import containers, providers
 
-from src.shared.llm_service.mistral import MistralService
-from src.shared.llm_service.claude import ClaudeService
-from src.shared.llm_service.gemini import GeminiService
-from src.shared.technique_service.technique_service import TechniqueService
 from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
-from src.recipe_import_service.services.tiktok_service import TiktokImportService
-from src.recipe_import_service.services.youtube_service import YouTubeImportService
-from src.recipe_import_service.services.instagram_service import (
-    InstagramImportService,
-)
-from src.recipe_import_service.services.web_recipe_service import WebRecipeService
 from src.database.database_service import DatabaseService
 from src.educational_engine.educational_engine_service import (
     EducationalEngineService,
 )
+from src.recipe_import_service.services.instagram_service import (
+    InstagramImportService,
+)
+from src.recipe_import_service.services.tiktok_service import TiktokImportService
+from src.recipe_import_service.services.web_recipe_service import WebRecipeService
+from src.recipe_import_service.services.youtube_service import YouTubeImportService
+from src.shared.llm_service.claude import ClaudeService
+from src.shared.llm_service.gemini import GeminiService
+from src.shared.llm_service.mistral import MistralService
+from src.technique_service.technique_service import TechniqueService
 
 
 class DependencyManager(containers.DeclarativeContainer):

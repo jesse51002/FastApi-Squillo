@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -73,6 +74,7 @@ class BaseImportService:
             recipe
         )
 
+        creation_time = datetime.now()
         # Save recipe to database if user_id is provided
         if user_id:
             stored_recipe = StoredRecipe(
@@ -81,6 +83,7 @@ class BaseImportService:
                 user_id=user_id,
                 source_url=url,
                 thumbnail_url=thumbnail_url,
+                created_at=creation_time,
             )
 
             recipe_display = await db_service.add_recipe_to_user(user_id, stored_recipe)
@@ -106,6 +109,7 @@ class BaseImportService:
                         for technique in step.techniques
                     }
                 ),
+                created_at=creation_time,
             ),
             no_recipe_found=False,
         )
