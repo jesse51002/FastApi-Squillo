@@ -37,11 +37,15 @@ class DependencyManager(containers.DeclarativeContainer):
         technique_service=technique_service,
     )
 
+    # Database Service
+    database_service = providers.Singleton(DatabaseService)
+
     # TikTok Import Service
     tiktok_import_service = providers.Singleton(
         TiktokImportService,
         mistral_service=mistral_service,
         technique_extraction_service=technique_extraction_service,
+        db_service=database_service,
     )
 
     # YouTube Import Service (handles both regular videos and Shorts)
@@ -49,6 +53,7 @@ class DependencyManager(containers.DeclarativeContainer):
         YouTubeImportService,
         mistral_service=mistral_service,
         technique_extraction_service=technique_extraction_service,
+        db_service=database_service,
     )
 
     # Instagram Import Service
@@ -56,6 +61,7 @@ class DependencyManager(containers.DeclarativeContainer):
         InstagramImportService,
         mistral_service=mistral_service,
         technique_extraction_service=technique_extraction_service,
+        db_service=database_service,
     )
 
     # Web Recipe Import Service
@@ -63,10 +69,8 @@ class DependencyManager(containers.DeclarativeContainer):
         WebRecipeService,
         mistral_service=mistral_service,
         technique_extraction_service=technique_extraction_service,
+        db_service=database_service,
     )
-
-    # Database Service
-    database_service = providers.Singleton(DatabaseService)
 
     # Educational Engine Service
     educational_engine_service = providers.Singleton(

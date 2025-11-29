@@ -4,8 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from src.database.schemas.recipe_schema import RecipeDisplayData
-from src.database.schemas.user_schema import LoadingStatus
+from src.database.schemas.recipe_schema import LoadingStatus, RecipeDisplayData
 
 
 class ImportRequest(BaseModel):

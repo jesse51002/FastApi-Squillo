@@ -54,7 +54,7 @@ class GeminiService(BaseLLMService):
         """
         try:
             # Build base config
-            config = {
+            config: dict[str, Any] = {
                 "temperature": 0,
             }
 

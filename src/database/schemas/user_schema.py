@@ -1,39 +1,11 @@
 """User schema for database storage."""
 
 from datetime import datetime, timezone
-from enum import Enum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.database.database_utils import validate_user_id
-from src.database.schemas.recipe_schema import RecipeDisplayData
-
-
-class LoadingStatus(str, Enum):
-    """Status values for recipes being imported and polled."""
-
-    LOADING = "loading"
-    PROCESSING = "processing"
-    EXTRACTING_TECHNIQUES = "extracting_techniques"
-    COMPLETED = "completed"
-    ERROR = "error"
-
-
-class LoadingRecipe(BaseModel):
-    """Schema for tracking recipes currently being imported."""
-
-    recipe_id: str = Field(..., description="Unique identifier for the recipe")
-    original_link: str = Field(
-        ..., description="Original URL from which the recipe is being imported"
-    )
-    time_started: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        description="Timestamp when the import started",
-    )
-    status: LoadingStatus = Field(
-        default=LoadingStatus.PROCESSING,
-        description="Current status of the import",
-    )
+from src.database.schemas.recipe_schema import LoadingRecipe, RecipeDisplayData
 
 
 class TechniqueWatchSession(BaseModel):

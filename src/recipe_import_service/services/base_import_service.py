@@ -8,11 +8,13 @@ from typing import Optional
 
 from src.ai_recipe_engine.ai_recipe_service import TechniqueExtractionService
 from src.database.database_service import DatabaseService
-from src.database.schemas.recipe_schema import StoredRecipe
-from src.database.schemas.user_schema import LoadingStatus
+from src.database.schemas.recipe_schema import LoadingStatus, StoredRecipe
 from src.recipe_import_service.schemas.import_schema import (
     ImportResponse,
     LlmOutputFormat,
+    PollingRequest,
+    PollingResponse,
+    RecipeStatus,
 )
 from src.shared.llm_service.mistral import MistralModels, MistralService
 from src.util.template_formatter import TemplateFormatter
@@ -31,15 +33,18 @@ class BaseImportService:
         self,
         mistral_service: MistralService,
         technique_extraction_service: TechniqueExtractionService,
+        db_service: DatabaseService,
     ) -> None:
         """Initialize base import service.
 
         Args:
             mistral_service: Mistral LLM service for recipe extraction
             technique_extraction_service: Service for extracting techniques from recipes
+            db_service: Database service for recipe and user operations
         """
         self.mistral_service = mistral_service
         self.technique_extraction_service = technique_extraction_service
+        self.db_service = db_service
 
     async def import_recipe(
         self,
@@ -176,6 +181,70 @@ class BaseImportService:
             raise Exception(f"Invalid JSON response from LLM: {str(e)}")
         except Exception as e:
             raise Exception(f"LLM response validation failed: {str(e)}")
+
+    async def poll_recipe_status(self, request: PollingRequest) -> PollingResponse:
+        """Poll the status of recipe imports.
+
+        For each recipe_id:
+        - If in loading_recipes: returns the current status (processing, extracting_techniques, error)
+        - If in recipes table: returns "completed"
+        - If in neither: returns "error" with message (orphaned state)
+
+        Args:
+            request: The request containing recipe_ids list and user_id
+
+        Returns:
+            PollingResponse: Dictionary mapping recipe_id to status
+
+        Raises:
+            ValueError: If user not found or other errors
+        """
+        # Get all loading recipes at once (includes timeout check)
+        loading_recipes = await self.db_service.get_loading_recipes(request.user_id)
+
+        statuses: dict[str, RecipeStatus] = {}
+        error_recipe_ids = []
+
+        for recipe_id in request.recipe_ids:
+            # Check if recipe is in loading_recipes dict
+            loading_recipe = loading_recipes.get(recipe_id)
+
+            if loading_recipe:
+                # Recipe is still loading - return the actual status
+                status = loading_recipe.status
+
+                # If error state, mark for removal
+                if status == LoadingStatus.ERROR:
+                    statuses[recipe_id] = RecipeStatus(
+                        status=status,
+                        error_message="Recipe import failed",
+                    )
+                    error_recipe_ids.append(recipe_id)
+                else:
+                    statuses[recipe_id] = RecipeStatus(status=status)
+                continue
+
+            # Check if recipe is in completed recipes
+            try:
+                stored_recipe = await self.db_service.get_recipe(recipe_id)
+                # Create recipe display data from stored recipe
+                recipe_display = self.db_service.create_recipe_display(stored_recipe)
+                # Recipe exists and is completed
+                statuses[recipe_id] = RecipeStatus(
+                    status=LoadingStatus.COMPLETED, recipe=recipe_display
+                )
+            except ValueError:
+                # Recipe not in loading and not in recipes - orphaned state
+                statuses[recipe_id] = RecipeStatus(
+                    status=LoadingStatus.ERROR,
+                    error_message="Recipe not found in loading or completed state",
+                )
+
+        # Remove all error recipes at once
+        for recipe_id in error_recipe_ids:
+            await self.db_service.remove_loading_recipe(request.user_id, recipe_id)
+
+        return PollingResponse(statuses=statuses)
 
     async def _create_text_recipe_with_transcript(
         self, transcript: str = "", description: str = ""

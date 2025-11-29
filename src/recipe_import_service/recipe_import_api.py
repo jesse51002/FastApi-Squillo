@@ -10,13 +10,12 @@ from fastapi import status as HTTPStatus
 from src.core.dependencies import DependencyManager
 from src.database.database_service import DatabaseService
 from src.database.database_utils import generate_recipe_id
-from src.database.schemas.user_schema import LoadingRecipe, LoadingStatus
+from src.database.schemas.recipe_schema import LoadingRecipe, LoadingStatus
 from src.recipe_import_service.schemas.import_schema import (
     ImportRequest,
     ImportResponse,
     PollingRequest,
     PollingResponse,
-    RecipeStatus,
 )
 from src.recipe_import_service.services.instagram_service import InstagramImportService
 from src.recipe_import_service.services.media_utils import Platform, detect_platform
@@ -158,7 +157,9 @@ async def import_recipe(
 @inject
 async def poll_recipe_status(
     request: PollingRequest,
-    db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
+    tiktok_service: TiktokImportService = Depends(
+        Provide[DependencyManager.tiktok_import_service]
+    ),
 ) -> PollingResponse:
     """Poll the status of recipe imports.
 
@@ -169,7 +170,7 @@ async def poll_recipe_status(
 
     Args:
         request: The request containing recipe_ids list and user_id
-        db_service: Injected database service
+        tiktok_service: Injected service (any service can be used as they all inherit from BaseImportService)
 
     Returns:
         PollingResponse: Dictionary mapping recipe_id to status
@@ -178,47 +179,7 @@ async def poll_recipe_status(
         HTTPException: If user not found or other errors
     """
     try:
-        # Validate user exists
-        await db_service.get_user(request.user_id)
-
-        statuses: dict[str, RecipeStatus] = {}
-
-        for recipe_id in request.recipe_ids:
-            # Check if recipe is in loading_recipes
-            loading_recipe = await db_service.get_loading_recipe(
-                request.user_id, recipe_id
-            )
-
-            if loading_recipe:
-                # Recipe is still loading - return the actual status or LOADING as default
-                status = loading_recipe.status
-                statuses[recipe_id] = RecipeStatus(
-                    status=status,
-                    error_message=(
-                        "Recipe import failed"
-                        if status == LoadingStatus.ERROR
-                        else None
-                    ),
-                )
-                continue
-
-            # Check if recipe is in completed recipes
-            try:
-                stored_recipe = await db_service.get_recipe(recipe_id)
-                # Create recipe display data from stored recipe
-                recipe_display = db_service.create_recipe_display(stored_recipe)
-                # Recipe exists and is completed
-                statuses[recipe_id] = RecipeStatus(
-                    status=LoadingStatus.COMPLETED, recipe=recipe_display
-                )
-            except ValueError:
-                # Recipe not in loading and not in recipes - orphaned state
-                statuses[recipe_id] = RecipeStatus(
-                    status=LoadingStatus.ERROR,
-                    error_message="Recipe not found in loading or completed state",
-                )
-
-        return PollingResponse(statuses=statuses)
+        return await tiktok_service.poll_recipe_status(request)
 
     except ValueError as e:
         logger.error("Poll recipe status failed", exc_info=True)

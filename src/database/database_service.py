@@ -2,14 +2,19 @@
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 import yaml
 
-from src.core.constants import MOCK_DATA_PATH
-from src.database.schemas.recipe_schema import RecipeDisplayData, StoredRecipe
-from src.database.schemas.user_schema import (
+from src.core.constants import LOADING_RECIPE_TIMEOUT_SECONDS, MOCK_DATA_PATH
+from src.database.schemas.recipe_schema import (
     LoadingRecipe,
     LoadingStatus,
+    RecipeDisplayData,
+    StoredRecipe,
+    UserRecipesResponse,
+)
+from src.database.schemas.user_schema import (
     User,
     UserCreate,
 )
@@ -220,23 +225,45 @@ class DatabaseService:
             created_at=recipe.created_at,
         )
 
-    async def get_all_recipes_from_user(self, user_id: str) -> list[RecipeDisplayData]:
-        """Retrieve all recipes belonging to a user.
+    async def get_all_recipes_from_user(self, user_id: str) -> UserRecipesResponse:
+        """Retrieve all recipes and loading recipes belonging to a user.
 
         Args:
             user_id: The ID of the user
 
         Returns:
-            List of StoredRecipe objects owned by the user
+            UserRecipesResponse containing completed recipes and loading recipes
 
         Raises:
             ValueError: If the user doesn't exist
         """
+        # Check for timeouts before retrieving
+        await self._check_loading_recipe_timeouts(user_id)
+
         async with self._lock:
             user = self._users.get(user_id)
             if not user:
                 raise ValueError(f"User with ID '{user_id}' not found")
-            return user.recipes
+
+            # Convert loading_recipes dict to list
+            loading_recipes_list = list(user.loading_recipes.values())
+
+            response = UserRecipesResponse(
+                recipes=user.recipes,
+                loading_recipes=loading_recipes_list,
+            )
+
+            # Remove all recipes in ERROR state after preparing response
+            error_recipe_ids = [
+                lr.recipe_id
+                for lr in loading_recipes_list
+                if lr.status == LoadingStatus.ERROR
+            ]
+            for recipe_id in error_recipe_ids:
+                user.loading_recipes.pop(recipe_id, None)
+                logger.info(f"Removed error recipe {recipe_id} from loading_recipes")
+
+            return response
 
     async def get_recipe(self, recipe_id: str) -> StoredRecipe:
         """Retrieve a specific recipe by its ID.
@@ -367,17 +394,36 @@ class DatabaseService:
 
             loading_recipe.status = status
 
-    async def get_loading_recipe(
-        self, user_id: str, recipe_id: str
-    ) -> LoadingRecipe | None:
-        """Get a loading recipe by recipe_id.
+    async def get_loading_recipes(self, user_id: str) -> dict[str, LoadingRecipe]:
+        """Get all loading recipes for a user.
 
         Args:
             user_id: The ID of the user
-            recipe_id: The ID of the recipe to retrieve
 
         Returns:
-            LoadingRecipe if found, None otherwise
+            Dictionary of loading recipes keyed by recipe_id
+
+        Raises:
+            ValueError: If the user doesn't exist
+        """
+        # Check for timeouts before retrieving
+        await self._check_loading_recipe_timeouts(user_id)
+
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            return user.loading_recipes.copy()
+
+    async def _check_loading_recipe_timeouts(self, user_id: str) -> None:
+        """Check for loading recipes that have exceeded the timeout and mark them as ERROR.
+
+        This method goes through all loading recipes for a user and marks any that have been
+        processing for longer than LOADING_RECIPE_TIMEOUT_SECONDS as ERROR state.
+
+        Args:
+            user_id: The ID of the user whose loading recipes to check
 
         Raises:
             ValueError: If the user doesn't exist
@@ -387,4 +433,19 @@ class DatabaseService:
             if not user:
                 raise ValueError(f"User with ID '{user_id}' not found")
 
-            return user.loading_recipes.get(recipe_id)
+            now = datetime.now(timezone.utc)
+            timed_out_recipes = []
+
+            # Find all recipes that have timed out
+            for recipe_id, loading_recipe in user.loading_recipes.items():
+                elapsed_seconds = (now - loading_recipe.time_started).total_seconds()
+                if elapsed_seconds > LOADING_RECIPE_TIMEOUT_SECONDS:
+                    timed_out_recipes.append(recipe_id)
+
+            # Mark timed out recipes as ERROR
+            for recipe_id in timed_out_recipes:
+                loading_recipe = user.loading_recipes[recipe_id]
+                loading_recipe.status = LoadingStatus.ERROR
+                logger.error(
+                    f"Recipe {recipe_id} timed out after {LOADING_RECIPE_TIMEOUT_SECONDS} seconds"
+                )
