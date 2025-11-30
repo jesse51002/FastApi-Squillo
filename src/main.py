@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
     Returns:
         FastAPI: Configured FastAPI application instance
     """
+
     app = FastAPI(
         title=settings.api_title,
         version=settings.api_version,
