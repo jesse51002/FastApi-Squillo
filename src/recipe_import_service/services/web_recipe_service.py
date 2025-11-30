@@ -156,7 +156,7 @@ class WebRecipeService(BaseImportService):
                 description=description,
             )
 
-            logger.info(f"Successfully extracted recipe using reciep_scrapers: {title}")
+            logger.info(f"Successfully extracted recipe using recipe_scrapers: {title}")
             return recipe_data
 
         except Exception:
@@ -329,7 +329,6 @@ class WebRecipeService(BaseImportService):
 
             # Convert relative URLs to absolute URLs
             img_url = urljoin(base_url, str(img_url))
-            logger.debug(f"Image URL: {img_url}")
 
             # Validate that the URL is absolute and has a valid scheme
             parsed_url = urlparse(img_url)

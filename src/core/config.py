@@ -63,7 +63,7 @@ def setup_logging(log_level: str | None = None) -> None:
 
     # Setup root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(level)
+    root_logger.setLevel(logging.WARNING)  # Warning for library requests
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -73,8 +73,6 @@ def setup_logging(log_level: str | None = None) -> None:
     # Remove existing handlers to avoid duplicates
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
-
-    logging.getLogger().setLevel(logging.WARNING)
 
     # Set specific loggers
     logging.getLogger("uvicorn").setLevel(level)
