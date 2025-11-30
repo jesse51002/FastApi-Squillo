@@ -282,6 +282,59 @@ class TechniqueExtractionService:
 
         return response
 
+    def _overwrite_techniques(
+        self, response: TechniqueExtractionResponse
+    ) -> TechniqueExtractionResponse:
+        """Remove techniques that are overwritten by other techniques' video_overwrite field.
+
+        This checks each technique to see if it has a video_overwrite field. If it does,
+        it removes any techniques from the response whose video_url matches the video_overwrite value.
+
+        Args:
+            response: The technique extraction response
+
+        Returns:
+            TechniqueExtractionResponse: The response with overwritten techniques removed
+        """
+        techniques_dict: dict[str, Technique] = (
+            self.technique_service.get_all_techniques()
+        )
+
+        # Collect all video_overwrite URLs from techniques present in the response
+        videos_to_remove: set[str] = set()
+
+        # First pass: collect all videos that should be overwritten
+        for step in response.steps:
+            for technique_info in step.techniques:
+                technique = techniques_dict.get(technique_info.id)
+                if technique and technique.video_overwrite:
+                    videos_to_remove.add(technique.video_overwrite)
+                    logger.debug(
+                        f"Technique '{technique.name}' ({technique.id}) will overwrite video: {technique.video_overwrite}"
+                    )
+
+        # Second pass: remove techniques whose video_url is in videos_to_remove
+        if videos_to_remove:
+            removed_count = 0
+            for step in response.steps:
+                original_count = len(step.techniques)
+                step.techniques = [
+                    tech for tech in step.techniques if tech.id not in videos_to_remove
+                ]
+                removed_from_step = original_count - len(step.techniques)
+                if removed_from_step > 0:
+                    removed_count += removed_from_step
+                    logger.debug(
+                        f"Removed {removed_from_step} overwritten technique(s) from step {step.step_number}"
+                    )
+
+            if removed_count > 0:
+                logger.info(
+                    f"Removed {removed_count} technique(s) that were overwritten by more specific techniques"
+                )
+
+        return response
+
     async def extract_techniques(self, recipe_text: str) -> TechniqueExtractionResponse:
         """Extract cooking techniques from recipe text.
 
@@ -324,6 +377,7 @@ class TechniqueExtractionService:
         response = self._validate(response)
 
         response = self._add_difficulty(response)
+        response = self._overwrite_techniques(response)
         response = self._sort_techniques(response)
         response = self._calculate_recipe_times(response)
 
