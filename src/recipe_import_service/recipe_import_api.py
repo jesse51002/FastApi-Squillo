@@ -117,7 +117,6 @@ async def import_recipe(
                 recipe_id=recipe_id,
                 user_id=request.user_id,
                 mock=request.mock,
-                background=True,
             )
 
             logger.info(f"Recipe {recipe_id} queued for background processing")
@@ -133,7 +132,6 @@ async def import_recipe(
             recipe_id=recipe_id,
             user_id=request.user_id,
             mock=request.mock,
-            background=False,
         )
 
     except ValueError as e:

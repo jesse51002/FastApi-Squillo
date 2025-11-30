@@ -450,7 +450,7 @@ class DatabaseService:
                     f"Recipe {recipe_id} timed out after {LOADING_RECIPE_TIMEOUT_SECONDS} seconds"
                 )
 
-    async def set_loading_recipe_err(self, user_id: str, recipe_id: str):
+    async def set_loading_recipe_err(self, user_id: str, recipe_id: str) -> None:
         """Set the status of a loading recipe to ERROR.
 
         Args:
