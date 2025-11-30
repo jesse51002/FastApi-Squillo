@@ -1,10 +1,10 @@
+import logging
+from enum import Enum
+from typing import Any, Optional
+
 from google import genai
 from google.genai import types
 
-from typing import Optional, Any
-from enum import Enum
-
-import logging
 from src.core.config import settings
 from src.shared.llm_service.base import BaseLLMService
 
@@ -24,7 +24,8 @@ class GeminiService(BaseLLMService):
 
     def __init__(self):
         self.api_key = settings.gemini_api_key
-        self.client = genai.Client(api_key=self.api_key)
+        # Use async client for non-blocking operations
+        self.client = genai.Client(api_key=self.api_key).aio
 
     def get_model_enum(self) -> type[Enum]:
         """Return the GeminiModels enum class.
@@ -53,7 +54,7 @@ class GeminiService(BaseLLMService):
         """
         try:
             # Build base config
-            config = {
+            config: dict[str, Any] = {
                 "temperature": 0,
             }
 
@@ -65,8 +66,8 @@ class GeminiService(BaseLLMService):
                 config["response_mime_type"] = "application/json"
                 config["response_json_schema"] = json_schema
 
-            # Make the API call using the official SDK
-            response = self.client.models.generate_content(
+            # Make the API call using the official SDK (async)
+            response = await self.client.models.generate_content(
                 model=GeminiModels.flash.value,
                 contents=input_prompt,
                 config=types.GenerateContentConfig(

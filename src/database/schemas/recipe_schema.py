@@ -1,6 +1,7 @@
 """Recipe schema for database storage."""
 
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -11,6 +12,65 @@ from src.ai_recipe_engine.schema import (
     TechniqueExtractionResponse,
 )
 from src.database.database_utils import validate_recipe_id, validate_user_id
+
+
+class LoadingStatus(str, Enum):
+    """Status values for recipes being imported and polled."""
+
+    LOADING = "loading"
+    PROCESSING = "processing"
+    EXTRACTING_TECHNIQUES = "extracting_techniques"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+
+class LoadingRecipe(BaseModel):
+    """Schema for tracking recipes currently being imported."""
+
+    recipe_id: str = Field(..., description="Unique identifier for the recipe")
+    original_link: str = Field(
+        ..., description="Original URL from which the recipe is being imported"
+    )
+    time_started: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the import started",
+    )
+    status: LoadingStatus = Field(
+        default=LoadingStatus.PROCESSING,
+        description="Current status of the import",
+    )
+
+
+class RecipeDisplayData(BaseModel):
+    """Lightweight recipe schema for displaying recipe summaries in lists.
+
+    Contains only the essential information needed to display a recipe card
+    or list item, without the full recipe details.
+    """
+
+    recipe_id: str = Field(..., description="Unique identifier for the recipe")
+    recipe_name: str = Field(..., description="Name of the recipe")
+    thumbnail_url: Optional[str] = Field(
+        default=None, description="URL to the recipe thumbnail image"
+    )
+    difficulty: RecipeDifficulty = Field(
+        ...,
+        description="Overall recipe difficulty based on the most difficult technique used",
+    )
+    technique_ids: list[str] = Field(
+        default_factory=list,
+        description="List of technique IDs used in this recipe",
+    )
+    created_at: datetime = Field(
+        ...,
+        description="Recipe creation time",
+    )
+
+    @field_validator("recipe_id")
+    @classmethod
+    def _validate_recipe_id(cls, v: str) -> str:
+        """Validate recipe_id format using shared validator."""
+        return validate_recipe_id(v)
 
 
 class StoreIngredient(ExtractionIngredient):
@@ -55,6 +115,22 @@ class StoredRecipe(TechniqueExtractionResponse):
         return validate_recipe_id(v)
 
 
+class UserRecipesResponse(BaseModel):
+    """Response schema for getting all recipes for a user.
+
+    Contains both completed recipes and recipes currently being loaded.
+    """
+
+    recipes: list[RecipeDisplayData] = Field(
+        default_factory=list,
+        description="List of completed recipes owned by the user",
+    )
+    loading_recipes: list[LoadingRecipe] = Field(
+        default_factory=list,
+        description="List of recipes currently being imported",
+    )
+
+
 class UpdateIngredientCheckedRequest(BaseModel):
     """Request schema for updating ingredient checked status."""
 
@@ -83,35 +159,3 @@ class UpdateIngredientCheckedResponse(BaseModel):
     message: str = Field(..., description="Success or error message")
     ingredient_name: str = Field(..., description="Name of the updated ingredient")
     checked: bool = Field(..., description="New checked status")
-
-
-class RecipeDisplayData(BaseModel):
-    """Lightweight recipe schema for displaying recipe summaries in lists.
-
-    Contains only the essential information needed to display a recipe card
-    or list item, without the full recipe details.
-    """
-
-    recipe_id: str = Field(..., description="Unique identifier for the recipe")
-    recipe_name: str = Field(..., description="Name of the recipe")
-    thumbnail_url: Optional[str] = Field(
-        default=None, description="URL to the recipe thumbnail image"
-    )
-    difficulty: RecipeDifficulty = Field(
-        ...,
-        description="Overall recipe difficulty based on the most difficult technique used",
-    )
-    technique_ids: list[str] = Field(
-        default_factory=list,
-        description="List of technique IDs used in this recipe",
-    )
-    created_at: datetime = Field(
-        ...,
-        description="Recipe creation time",
-    )
-
-    @field_validator("recipe_id")
-    @classmethod
-    def _validate_recipe_id(cls, v: str) -> str:
-        """Validate recipe_id format using shared validator."""
-        return validate_recipe_id(v)

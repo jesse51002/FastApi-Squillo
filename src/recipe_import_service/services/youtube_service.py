@@ -1,21 +1,21 @@
 """YouTube import service for extracting recipes from YouTube videos."""
 
 import json
-import re
-from typing import Optional
-from pathlib import Path
 import logging
-import httpx
+import re
+from pathlib import Path
+from typing import Optional
 from xml.etree import ElementTree as ET
 
-from src.shared.llm_service.mistral import MistralService, MistralModels
+import httpx
+
+from src.core.config import settings
 from src.recipe_import_service.schemas.youtube_schema import (
-    YouTubeEnsembleResponse,
     YouTubeEnsembleParams,
+    YouTubeEnsembleResponse,
 )
 from src.recipe_import_service.services.base_import_service import BaseImportService
-from src.core.config import settings
-
+from src.shared.llm_service.mistral import MistralModels
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +28,6 @@ class YouTubeImportService(BaseImportService):
         Path(__file__).parent.parent / "templates" / "youtube_recipe_template.md"
     )
     ENSEMBLE_API_URL = "https://ensembledata.com/apis/youtube/channel/get-short-stats"
-
-    def __init__(self, mistral_service: MistralService):
-        """Initialize YouTube import service.
-
-        Args:
-            mistral_service: Mistral LLM service for recipe extraction
-        """
-        self.mistral_service = mistral_service
 
     async def _url_to_text_recipe(
         self, url: str, mock: bool = False
@@ -96,7 +88,6 @@ class YouTubeImportService(BaseImportService):
 
         # Create recipe with available data (transcript and/or description)
         if transcript:
-
             logger.info(f"Text Data: {combined_text}\n\n Transcript: {transcript}")
 
             recipe = await self._create_text_recipe_with_transcript(

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.database.database_utils import validate_user_id
-from src.database.schemas.recipe_schema import RecipeDisplayData
+from src.database.schemas.recipe_schema import LoadingRecipe, RecipeDisplayData
 
 
 class TechniqueWatchSession(BaseModel):
@@ -59,6 +59,10 @@ class User(BaseModel):
     recipes: list[RecipeDisplayData] = Field(
         default_factory=list,
         description="List of recipe display data owned by this user",
+    )
+    loading_recipes: dict[str, LoadingRecipe] = Field(
+        default_factory=dict,
+        description="Dictionary of recipes currently being imported, keyed by recipe_id",
     )
     techniques_watched: dict[str, TechniqueViewingInfo] = Field(
         default_factory=dict,

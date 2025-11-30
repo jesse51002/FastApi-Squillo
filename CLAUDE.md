@@ -16,6 +16,9 @@
 ## Python Standards
 
 **Imports**
+- **ALWAYS add imports at the top of the file** - all imports must be at the beginning
+- Good: All imports grouped at the top, before any code
+- Bad: Imports scattered throughout the file or added in the middle of code
 - **NEVER use relative imports** - always use absolute imports from `src`
 - Good: `from src.recipe_import_service.schemas.tiktok_schema import TikTokImportRequest`
 - Bad: `from .schemas.tiktok_schema import TikTokImportRequest`

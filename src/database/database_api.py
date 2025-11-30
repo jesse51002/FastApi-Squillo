@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from src.core.dependencies import DependencyManager
 from src.database.database_service import DatabaseService
 from src.database.schemas.recipe_schema import (
-    RecipeDisplayData,
     StoredRecipe,
     UpdateIngredientCheckedRequest,
     UpdateIngredientCheckedResponse,
+    UserRecipesResponse,
 )
 from src.database.schemas.user_schema import (
     UserCreate,
@@ -119,16 +119,16 @@ async def get_user(
 
 @router.get(
     "/users/{user_id}/recipes",
-    response_model=list[RecipeDisplayData],
+    response_model=UserRecipesResponse,
     status_code=status.HTTP_200_OK,
     summary="Get all recipes for user",
-    description="Retrieves all recipes belonging to a user",
+    description="Retrieves all completed and loading recipes belonging to a user",
 )
 @inject
 async def get_user_recipes(
     user_id: str,
     db_service: DatabaseService = Depends(Provide[DependencyManager.database_service]),
-) -> list[RecipeDisplayData]:
+) -> UserRecipesResponse:
     """Get all recipes for a user.
 
     Args:
@@ -136,14 +136,14 @@ async def get_user_recipes(
         db_service: Injected database service
 
     Returns:
-        List of recipes owned by the user
+        UserRecipesResponse containing completed recipes and loading recipes
 
     Raises:
         HTTPException: If user not found or retrieval fails
     """
     try:
-        recipes = await db_service.get_all_recipes_from_user(user_id)
-        return recipes
+        user_recipes = await db_service.get_all_recipes_from_user(user_id)
+        return user_recipes
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
