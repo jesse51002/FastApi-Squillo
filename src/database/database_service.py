@@ -449,3 +449,24 @@ class DatabaseService:
                 logger.error(
                     f"Recipe {recipe_id} timed out after {LOADING_RECIPE_TIMEOUT_SECONDS} seconds"
                 )
+
+    async def set_loading_recipe_err(self, user_id: str, recipe_id: str):
+        """Set the status of a loading recipe to ERROR.
+
+        Args:
+            user_id: The ID of the user whose loading recipe to set.
+            recipe_id: The ID of the recipe to set.
+
+        Raises:
+            ValueError: If the user or recipe doesn't exist.
+        """
+        async with self._lock:
+            user = self._users.get(user_id)
+            if not user:
+                raise ValueError(f"User with ID '{user_id}' not found")
+
+            loading_recipe = user.loading_recipes.get(recipe_id)
+            if not loading_recipe:
+                raise ValueError(f"Recipe with ID '{recipe_id}' not found")
+
+            loading_recipe.status = LoadingStatus.ERROR
