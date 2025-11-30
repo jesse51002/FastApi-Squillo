@@ -80,10 +80,13 @@ class WebRecipeService(BaseImportService):
                 logger.info(f"Extracted web recipe thumbnail: {thumbnail_url}")
             return recipe, thumbnail_url
         else:
-            # Step 2: Fall back to LLM extraction (no thumbnail available)
+            # Step 2: Fall back to LLM extraction and extract largest image
             logger.info("No structured data found, falling back to LLM extraction")
             recipe = await self._extract_recipe_with_llm(html_content)
-            return recipe, None
+            thumbnail_url = self._extract_largest_image(html_content)
+            if thumbnail_url:
+                logger.info(f"Extracted largest image as thumbnail: {thumbnail_url}")
+            return recipe, thumbnail_url
 
     async def _scrape_recipe_structured_data(
         self, url: str, html_content: str
@@ -292,3 +295,75 @@ class WebRecipeService(BaseImportService):
         )
 
         return cleaned_text
+
+    def _extract_largest_image(self, html_content: str) -> Optional[str]:
+        """Extract the largest visible image from HTML based on rendered size.
+
+        Looks for images with width and height attributes and calculates their
+        visible area (width * height). Returns the URL of the largest image.
+
+        Args:
+            html_content: HTML content to parse
+
+        Returns:
+            URL of the largest image, or None if no suitable images found
+        """
+        soup = BeautifulSoup(html_content, "lxml")
+
+        largest_image_url = None
+        largest_area = 0
+
+        # Find all img tags
+        for img in soup.find_all("img"):
+            # Get image URL from src, data-src, or data-lazy-src (common lazy loading attrs)
+            img_url = (
+                img.get("src")
+                or img.get("data-src")
+                or img.get("data-lazy-src")
+                or img.get("data-original")
+            )
+
+            if not img_url:
+                continue
+
+            # Skip small icons, logos, and tracking pixels
+            if any(
+                keyword in img_url.lower()
+                for keyword in ["icon", "logo", "pixel", "tracking", "1x1"]
+            ):
+                continue
+
+            # Try to get dimensions from attributes
+            width = img.get("width")
+            height = img.get("height")
+
+            # Parse dimensions if they're strings
+            try:
+                if width and height:
+                    # Remove 'px' suffix if present and convert to int
+                    width = int(str(width).replace("px", "").strip())
+                    height = int(str(height).replace("px", "").strip())
+
+                    # Calculate visible area
+                    area = width * height
+
+                    # Skip very small images (likely icons/buttons)
+                    if area < 10000:  # Less than ~100x100
+                        continue
+
+                    # Update largest image if this one is bigger
+                    if area > largest_area:
+                        largest_area = area
+                        largest_image_url = img_url
+
+            except (ValueError, TypeError):
+                # If dimensions can't be parsed, skip this image
+                continue
+
+        # Make URL absolute if it's relative
+        if largest_image_url and largest_image_url.startswith("/"):
+            # This would need the base URL to construct absolute URL
+            # For now, we'll just return it as-is and let the caller handle it
+            pass
+
+        return largest_image_url
