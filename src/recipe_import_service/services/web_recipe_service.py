@@ -328,7 +328,7 @@ class WebRecipeService(BaseImportService):
 
             # Skip small icons, logos, and tracking pixels
             if any(
-                keyword in img_url.lower()
+                keyword in str(img_url).lower()
                 for keyword in ["icon", "logo", "pixel", "tracking", "1x1"]
             ):
                 continue
@@ -361,9 +361,9 @@ class WebRecipeService(BaseImportService):
                 continue
 
         # Make URL absolute if it's relative
-        if largest_image_url and largest_image_url.startswith("/"):
+        if largest_image_url and str(largest_image_url).startswith("/"):
             # This would need the base URL to construct absolute URL
             # For now, we'll just return it as-is and let the caller handle it
             pass
 
-        return largest_image_url
+        return str(largest_image_url)
