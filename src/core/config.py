@@ -74,6 +74,8 @@ def setup_logging(log_level: str | None = None) -> None:
     root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
 
+    logging.getLogger().setLevel(logging.WARNING)
+
     # Set specific loggers
     logging.getLogger("uvicorn").setLevel(level)
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)

@@ -335,7 +335,9 @@ class TechniqueExtractionService:
 
         return response
 
-    async def extract_techniques(self, recipe_text: str) -> TechniqueExtractionResponse:
+    async def extract_techniques(
+        self, recipe_text: str, debug_enabled: bool = False
+    ) -> TechniqueExtractionResponse:
         """Extract cooking techniques from recipe text.
 
         Args:
@@ -351,7 +353,7 @@ class TechniqueExtractionService:
         # Generate formatted prompt
         prompt = self._get_template(recipe_text)
 
-        logger.debug(f"Input prompt:\\n\\n {prompt}")
+        logger.debug("Calling LLM API to extract techniques")
 
         # Call LLM API
         llm_response = await self.llm_service.call_llm_api(
@@ -381,15 +383,18 @@ class TechniqueExtractionService:
         response = self._sort_techniques(response)
         response = self._calculate_recipe_times(response)
 
-        # Debug log the response in YAML format
-        logger.debug(
-            "Technique extraction response:\n%s",
-            yaml.dump(
-                response.model_dump(),
-                default_flow_style=False,
-                allow_unicode=True,
-                sort_keys=False,
-            ),
-        )
+        logger.debug("Successfully extracted techniques")
+
+        if debug_enabled:
+            # Debug log the response in YAML format
+            logger.debug(
+                "Technique extraction response:\n%s",
+                yaml.dump(
+                    response.model_dump(),
+                    default_flow_style=False,
+                    allow_unicode=True,
+                    sort_keys=False,
+                ),
+            )
 
         return response

@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup, Comment
@@ -83,7 +84,7 @@ class WebRecipeService(BaseImportService):
             # Step 2: Fall back to LLM extraction and extract largest image
             logger.info("No structured data found, falling back to LLM extraction")
             recipe = await self._extract_recipe_with_llm(html_content)
-            thumbnail_url = self._extract_largest_image(html_content)
+            thumbnail_url = self._extract_largest_image(html_content, base_url=url)
             if thumbnail_url:
                 logger.info(f"Extracted largest image as thumbnail: {thumbnail_url}")
             return recipe, thumbnail_url
@@ -155,11 +156,10 @@ class WebRecipeService(BaseImportService):
                 description=description,
             )
 
-            logger.info(f"Successfully extracted recipe: {title}")
+            logger.info(f"Successfully extracted recipe using reciep_scrapers: {title}")
             return recipe_data
 
-        except Exception as e:
-            logger.warning(f"Failed to extract structured data from {url}: {str(e)}")
+        except Exception:
             return None
 
     def _format_recipe_markdown(self, recipe_data: WebRecipeData) -> str:
@@ -296,17 +296,18 @@ class WebRecipeService(BaseImportService):
 
         return cleaned_text
 
-    def _extract_largest_image(self, html_content: str) -> Optional[str]:
+    def _extract_largest_image(self, html_content: str, base_url: str) -> Optional[str]:
         """Extract the largest visible image from HTML based on rendered size.
 
         Looks for images with width and height attributes and calculates their
-        visible area (width * height). Returns the URL of the largest image.
+        visible area (width * height). Returns the absolute URL of the largest image.
 
         Args:
             html_content: HTML content to parse
+            base_url: Base URL of the webpage for resolving relative URLs
 
         Returns:
-            URL of the largest image, or None if no suitable images found
+            Absolute URL of the largest image, or None if no suitable images found
         """
         soup = BeautifulSoup(html_content, "lxml")
 
@@ -326,9 +327,23 @@ class WebRecipeService(BaseImportService):
             if not img_url:
                 continue
 
+            # Convert relative URLs to absolute URLs
+            img_url = urljoin(base_url, str(img_url))
+            logger.debug(f"Image URL: {img_url}")
+
+            # Validate that the URL is absolute and has a valid scheme
+            parsed_url = urlparse(img_url)
+            if not parsed_url.scheme or not parsed_url.netloc:
+                # Skip invalid URLs
+                continue
+
+            # Only accept http/https URLs
+            if parsed_url.scheme not in ["http", "https"]:
+                continue
+
             # Skip small icons, logos, and tracking pixels
             if any(
-                keyword in str(img_url).lower()
+                keyword in img_url.lower()
                 for keyword in ["icon", "logo", "pixel", "tracking", "1x1"]
             ):
                 continue
@@ -360,10 +375,4 @@ class WebRecipeService(BaseImportService):
                 # If dimensions can't be parsed, skip this image
                 continue
 
-        # Make URL absolute if it's relative
-        if largest_image_url and str(largest_image_url).startswith("/"):
-            # This would need the base URL to construct absolute URL
-            # For now, we'll just return it as-is and let the caller handle it
-            pass
-
-        return str(largest_image_url)
+        return largest_image_url
